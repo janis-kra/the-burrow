@@ -21,7 +21,7 @@ func TestWeatherFetch(t *testing.T) {
 	}))
 	defer server.Close()
 
-	weather := NewWeather(server.Client(), 52.52, 13.405)
+	weather := NewWeather(server.Client(), 52.52, 13.405, "Berlin")
 	weather.baseURL = server.URL
 
 	result, err := weather.Fetch(context.Background())

@@ -202,7 +202,7 @@ a:hover { text-decoration: underline; }
 </tr>
 {{end}}
 
-{{if hasPrefix .Name "Reddit"}}
+{{if eq .Name "Reddit"}}
 {{$sec := nextSection}}
 <!-- Reddit Section Header -->
 <tr>
@@ -210,7 +210,7 @@ a:hover { text-decoration: underline; }
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
   <tr>
     <td style="padding-bottom: 10px; border-bottom: 2px solid #000000;">
-      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #326891;">{{.Name}}</p>
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #326891;">Reddit</p>
     </td>
   </tr>
   </table>
@@ -232,7 +232,7 @@ a:hover { text-decoration: underline; }
       <div style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; color: #333333; line-height: 1.6;">{{markdown (excerpt .Selftext 2)}}</div>
       {{end}}
       <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #999999;">
-        {{if .Author}}By <span style="color: #333333; font-weight: 600;">{{.Author}}</span> &middot; {{end}}{{.Score}} points &middot; {{.NumComments}} comments
+        {{if .Subreddit}}<span style="color: #326891; font-weight: 600;">r/{{.Subreddit}}</span> &middot; {{end}}{{if .Author}}By <span style="color: #333333; font-weight: 600;">{{.Author}}</span> &middot; {{end}}{{.Score}} points &middot; {{.NumComments}} comments
       </p>
       {{end}}
     </td>
@@ -243,7 +243,7 @@ a:hover { text-decoration: underline; }
           <p style="margin: 0 0 4px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; font-weight: 700; color: #121212; line-height: 1.3;">{{$p.Title}}</p>
         </a>
         <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #999999;">
-          {{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Score}} pts &middot; {{$p.NumComments}} comments
+          {{if $p.Subreddit}}<span style="color: #326891;">r/{{$p.Subreddit}}</span> &middot; {{end}}{{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Score}} pts &middot; {{$p.NumComments}} comments
         </p>
       </div>
       {{end}}
@@ -257,7 +257,7 @@ a:hover { text-decoration: underline; }
           <p style="margin: 0 0 4px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; font-weight: 700; color: #121212; line-height: 1.3;">{{$p.Title}}</p>
         </a>
         <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #999999;">
-          {{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Score}} pts &middot; {{$p.NumComments}} comments
+          {{if $p.Subreddit}}<span style="color: #326891;">r/{{$p.Subreddit}}</span> &middot; {{end}}{{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Score}} pts &middot; {{$p.NumComments}} comments
         </p>
       </div>
       {{end}}
@@ -271,7 +271,7 @@ a:hover { text-decoration: underline; }
       <div style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; color: #333333; line-height: 1.6;">{{markdown (excerpt .Selftext 2)}}</div>
       {{end}}
       <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #999999;">
-        {{if .Author}}By <span style="color: #333333; font-weight: 600;">{{.Author}}</span> &middot; {{end}}{{.Score}} points &middot; {{.NumComments}} comments
+        {{if .Subreddit}}<span style="color: #326891; font-weight: 600;">r/{{.Subreddit}}</span> &middot; {{end}}{{if .Author}}By <span style="color: #333333; font-weight: 600;">{{.Author}}</span> &middot; {{end}}{{.Score}} points &middot; {{.NumComments}} comments
       </p>
       {{end}}
     </td>

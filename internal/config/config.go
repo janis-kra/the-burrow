@@ -32,7 +32,8 @@ type SourceConfig struct {
 	// Readwise fields
 	APIToken  string  `yaml:"api_token,omitempty"`
 	// Reddit fields
-	Subreddit string  `yaml:"subreddit,omitempty"`
+	Subreddit  string   `yaml:"subreddit,omitempty"`
+	Subreddits []string `yaml:"subreddits,omitempty"`
 	// Nitter fields
 	NitterInstance string   `yaml:"nitter_instance,omitempty"`
 	Usernames      []string `yaml:"usernames,omitempty"`
