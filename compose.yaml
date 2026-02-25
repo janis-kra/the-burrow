@@ -1,0 +1,10 @@
+services:
+  burrow:
+    build:
+      context: .
+      dockerfile: Containerfile
+    volumes:
+      - ./config.yaml:/etc/burrow/config.yaml:ro
+    environment:
+      - RESEND_API_KEY
+      - READWISE_API_TOKEN

@@ -1,0 +1,44 @@
+schedule: "0 7 * * *"  # 7:00 AM daily
+edition: 0
+
+email:
+  from: "The Burrow<mail@burrow.janiskrasemann.com>"
+  to: "janis.krasemann@proton.me"
+  test_to: "burrow-test@fleneifvio.resend.app"
+  resend_api_key: "${RESEND_API_KEY}"
+
+sources:
+  - type: weather
+    latitude: 52.104000
+    longitude: 9.357130
+    name: "Hameln"
+
+  - type: readwise
+    api_token: "${READWISE_API_TOKEN}"
+
+  - type: hackernews
+
+  - type: reddit
+    subreddit: ClaudeCode
+
+  - type: reddit
+    subreddit: ExperiencedDevs
+
+  - type: nitter
+    nitter_instance: "https://nitter.net"
+    usernames:
+      - bcherny
+      - GeoffreyHuntley
+      - WesBos
+
+  - type: reddit
+    subreddit: de
+
+  - type: reddit
+    subreddit: EU5
+
+  - type: reddit
+    subreddit: Finanzen
+
+  - type: reddit
+    subreddit: DnD
