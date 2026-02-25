@@ -22,10 +22,6 @@ sources:
     subreddits:
       - ClaudeCode
       - ExperiencedDevs
-      - de
-      - EU5
-      - Finanzen
-      - DnD
 
   - type: nitter
     nitter_instance: "https://nitter.net"
@@ -37,3 +33,10 @@ sources:
   - type: unsplash
     api_token: "${UNSPLASH_ACCESS_KEY}"
     query: "morning,nature,calm"
+
+  - type: reddit
+    subreddits:
+      - de
+      - EU5
+      - Finanzen
+      - DnD
