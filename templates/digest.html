@@ -34,7 +34,7 @@ a:hover { text-decoration: underline; }
       {{.Date}}
     </td>
     <td width="50%" style="text-align: center; padding-bottom: 8px;">
-      <h1 style="margin: 0; font-family: 'Old English Text MT', 'Playfair Display', Georgia, 'Times New Roman', Times, serif; font-size: 52px; font-weight: 900; color: #000000; letter-spacing: 2px; line-height: 1;">The Burrow</h1>
+      <h1 style="margin: 0; font-family: 'Old English Text MT', 'Playfair Display', Georgia, 'Times New Roman', Times, serif; font-size: 42px; font-weight: 900; color: #000000; letter-spacing: 2px; line-height: 1; white-space: nowrap;">The Burrow</h1>
     </td>
     <td width="25%" style="text-align: right; vertical-align: bottom; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 11px; color: #666666; padding-bottom: 12px;">
       Morning Edition{{if .Edition}} #{{.Edition}}{{end}}
@@ -63,7 +63,6 @@ a:hover { text-decoration: underline; }
     <td style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 13px; color: #333333;">
       {{if .Location}}<span style="vertical-align: middle; font-weight: 600;">{{.Location}}</span><span style="vertical-align: middle; color: #aaaaaa; padding-left: 4px; padding-right: 4px;">&middot;</span>{{end}}<span style="font-size: 22px; vertical-align: middle;">{{weatherIcon .WeatherCode}}</span>
       <span style="vertical-align: middle; padding-left: 6px;"><strong>{{printf "%.0f" .Temperature}}&deg;C</strong></span>
-      <span style="vertical-align: middle; color: #888888; padding-left: 4px;">{{.Description}}</span>
       <span style="vertical-align: middle; color: #aaaaaa; padding-left: 8px; font-size: 12px;">H: {{printf "%.0f" .HighTemp}}&deg; &middot; L: {{printf "%.0f" .LowTemp}}&deg; &middot; Precip: {{printf "%.0f" .Precipitation}}%</span>
     </td>
   </tr>
