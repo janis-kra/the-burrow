@@ -1,0 +1,27 @@
+BURROW DIGEST — {{.Date}}
+========================================
+{{range .Results}}
+--- {{.Name}} ---
+{{if .Error}}[Could not load this module]
+{{else}}{{if eq .Name "Hacker News"}}{{range hnPosts .Data}}
+  * {{.Title}}
+    {{.Points}} pts | {{.NumComments}} comments
+    {{.URL}}
+{{end}}{{end}}{{if eq .Name "Weather"}}{{with weatherData .Data}}
+  {{printf "%.1f" .Temperature}}°C — {{.Description}}
+  High: {{printf "%.0f" .HighTemp}}° | Low: {{printf "%.0f" .LowTemp}}° | Precip: {{printf "%.0f" .Precipitation}}%
+{{end}}{{end}}{{if eq .Name "Readwise"}}{{range highlights .Data}}
+  "{{.Text}}"
+  — {{.BookTitle}}{{if .BookAuthor}}, {{.BookAuthor}}{{end}}
+{{end}}{{end}}{{if hasPrefix .Name "Reddit"}}{{range redditPosts .Data}}
+  * {{.Title}}
+    {{.Score}} pts | {{.NumComments}} comments
+    {{.FullPermalink}}
+{{end}}{{end}}{{if eq .Name "Opinion"}}{{range nitterPosts .Data}}
+  @{{.Username}} ({{nitterTimeAgo .PubDate}}):
+  {{.Text}}
+  {{.Link}}
+{{end}}{{end}}{{end}}
+{{end}}
+---
+Delivered by Burrow

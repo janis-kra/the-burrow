@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<title>Burrow Digest</title>
+<style>
+html, body { margin: 0 auto !important; padding: 0 !important; height: 100% !important; width: 100% !important; background: #f4f1ec; }
+* { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+table, td { mso-table-lspace: 0pt !important; mso-table-rspace: 0pt !important; }
+table { border-spacing: 0 !important; border-collapse: collapse !important; table-layout: fixed !important; margin: 0 auto !important; }
+img { -ms-interpolation-mode: bicubic; }
+a { text-decoration: none; color: #326891; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body width="100%" style="margin: 0; padding: 0 !important; background-color: #f4f1ec;">
+<center style="width: 100%; background-color: #f4f1ec;">
+<div style="display: none; font-size: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all;">
+  Your morning digest is here &zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;
+</div>
+<div style="max-width: 680px; margin: 0 auto; background: #fffef9;">
+
+<table align="center" role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: auto; background: #fffef9;">
+
+<!-- Masthead -->
+<tr>
+<td style="padding: 20px 30px 0; text-align: center; border-bottom: 2px solid #000000;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+  <tr>
+    <td width="25%" style="text-align: left; vertical-align: bottom; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 11px; color: #666666; padding-bottom: 12px;">
+      {{.Date}}
+    </td>
+    <td width="50%" style="text-align: center; padding-bottom: 8px;">
+      <h1 style="margin: 0; font-family: 'Old English Text MT', 'Playfair Display', Georgia, 'Times New Roman', Times, serif; font-size: 52px; font-weight: 900; color: #000000; letter-spacing: 2px; line-height: 1;">The Burrow</h1>
+    </td>
+    <td width="25%" style="text-align: right; vertical-align: bottom; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 11px; color: #666666; padding-bottom: 12px;">
+      Morning Edition{{if .Edition}} #{{.Edition}}{{end}}
+    </td>
+  </tr>
+  </table>
+</td>
+</tr>
+
+<!-- Thin double rule -->
+<tr>
+<td style="padding: 0 30px;">
+  <div style="border-top: 1px solid #000000; margin-top: 3px;"></div>
+</td>
+</tr>
+
+{{range .Results}}
+{{if not .Error}}
+{{if eq .Name "Weather"}}
+{{with weatherData .Data}}
+<!-- Weather Banner -->
+<tr>
+<td style="padding: 14px 30px; border-bottom: 1px solid #e0ddd5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="font-family: Georgia, 'Times New Roman', Times, serif; font-size: 13px; color: #333333;">
+      {{if .Location}}<span style="vertical-align: middle; font-weight: 600;">{{.Location}}</span><span style="vertical-align: middle; color: #aaaaaa; padding-left: 4px; padding-right: 4px;">&middot;</span>{{end}}<span style="font-size: 22px; vertical-align: middle;">{{weatherIcon .WeatherCode}}</span>
+      <span style="vertical-align: middle; padding-left: 6px;"><strong>{{printf "%.0f" .Temperature}}&deg;C</strong></span>
+      <span style="vertical-align: middle; color: #888888; padding-left: 4px;">{{.Description}}</span>
+      <span style="vertical-align: middle; color: #aaaaaa; padding-left: 8px; font-size: 12px;">H: {{printf "%.0f" .HighTemp}}&deg; &middot; L: {{printf "%.0f" .LowTemp}}&deg; &middot; Precip: {{printf "%.0f" .Precipitation}}%</span>
+    </td>
+  </tr>
+  </table>
+</td>
+</tr>
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{range .Results}}
+{{if not .Error}}
+{{if eq .Name "Readwise"}}
+{{range highlights .Data}}
+<!-- Lead Headline: Readwise Quote -->
+<tr>
+<td style="padding: 24px 30px 20px; text-align: center; border-bottom: 1px solid #e0ddd5;">
+  <p style="margin: 0 0 16px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 26px; font-weight: 700; color: #121212; line-height: 1.25; letter-spacing: -0.3px;">Daily Highlight</p>
+  <div style="max-width: 520px; margin: 0 auto;">
+    <p style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 17px; color: #333333; line-height: 1.65; font-style: italic;">&ldquo;{{.Text}}&rdquo;</p>
+    <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #999999; letter-spacing: 0.5px;">{{if .BookAuthor}}<span style="color: #333333; font-weight: 600;">{{.BookAuthor}}</span>{{end}}{{if and .BookAuthor .BookTitle}} &mdash; {{end}}{{if .SourceURL}}<a href="{{.SourceURL}}" style="color: #326891; text-decoration: none; font-style: italic;">{{.BookTitle}}</a>{{else}}{{if .BookTitle}}<span style="font-style: italic;">{{.BookTitle}}</span>{{end}}{{end}}</p>
+  </div>
+</td>
+</tr>
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{range .Results}}
+{{if .Error}}
+<!-- Error Module -->
+<tr>
+<td style="padding: 16px 30px; border-bottom: 1px solid #e0ddd5;">
+  <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #999999;">{{.Name}}</p>
+  <p style="margin: 6px 0 0; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 13px; color: #cc3333; line-height: 1.5;">Could not load this module. It will be back next time.</p>
+</td>
+</tr>
+{{else}}
+
+{{if eq .Name "Hacker News"}}
+{{$sec := nextSection}}
+<!-- Hacker News Section Header -->
+<tr>
+<td style="padding: 20px 30px 0;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="padding-bottom: 10px; border-bottom: 2px solid #000000;">
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #326891;">Hacker News</p>
+    </td>
+  </tr>
+  </table>
+</td>
+</tr>
+<!-- HN Lead Article + Sidebar -->
+<tr>
+<td style="padding: 0 30px 16px;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    {{if isEven $sec}}
+    <!-- Lead left, sidebar right -->
+    <td width="58%" style="vertical-align: top; padding: 16px 20px 16px 0; border-right: 1px solid #e0ddd5;">
+      {{range $i, $p := hnPosts .Data}}{{if eq $i 0}}
+      <a href="{{$p.URL}}" style="text-decoration: none; color: #121212;">
+        <p style="margin: 0 0 8px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 24px; font-weight: 700; color: #121212; line-height: 1.2;">{{$p.Title}}</p>
+      </a>
+      {{if $p.StoryText}}
+      <p style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; color: #333333; line-height: 1.6;">{{excerpt $p.StoryText 2}}</p>
+      {{end}}
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #999999;">
+        {{if $p.Author}}By <span style="color: #333333; font-weight: 600;">{{$p.Author}}</span> &middot; {{end}}{{$p.Points}} points &middot; <a href="{{$p.CommentsURL}}" style="color: #326891; text-decoration: none;">{{$p.NumComments}} comments</a>
+      </p>
+      {{end}}{{end}}
+    </td>
+    <td width="42%" style="vertical-align: top; padding: 12px 0 12px 20px;">
+      {{range $i, $p := slice 1 (hnPosts .Data)}}
+      <div style="padding: 6px 0 10px;{{if $i}} border-top: 1px solid #e0ddd5; margin-top: 2px;{{end}}">
+        <a href="{{$p.URL}}" style="text-decoration: none; color: #121212;">
+          <p style="margin: 0 0 4px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; font-weight: 700; color: #121212; line-height: 1.3;">{{$p.Title}}</p>
+        </a>
+        <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #999999;">
+          {{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Points}} pts &middot; <a href="{{$p.CommentsURL}}" style="color: #326891; text-decoration: none;">{{$p.NumComments}} comments</a>
+        </p>
+      </div>
+      {{end}}
+    </td>
+    {{else}}
+    <!-- Sidebar left, lead right -->
+    <td width="42%" style="vertical-align: top; padding: 12px 20px 12px 0; border-right: 1px solid #e0ddd5;">
+      {{range $i, $p := slice 1 (hnPosts .Data)}}
+      <div style="padding: 6px 0 10px;{{if $i}} border-top: 1px solid #e0ddd5; margin-top: 2px;{{end}}">
+        <a href="{{$p.URL}}" style="text-decoration: none; color: #121212;">
+          <p style="margin: 0 0 4px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; font-weight: 700; color: #121212; line-height: 1.3;">{{$p.Title}}</p>
+        </a>
+        <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #999999;">
+          {{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Points}} pts &middot; <a href="{{$p.CommentsURL}}" style="color: #326891; text-decoration: none;">{{$p.NumComments}} comments</a>
+        </p>
+      </div>
+      {{end}}
+    </td>
+    <td width="58%" style="vertical-align: top; padding: 16px 0 16px 20px;">
+      {{range $i, $p := hnPosts .Data}}{{if eq $i 0}}
+      <a href="{{$p.URL}}" style="text-decoration: none; color: #121212;">
+        <p style="margin: 0 0 8px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 24px; font-weight: 700; color: #121212; line-height: 1.2;">{{$p.Title}}</p>
+      </a>
+      {{if $p.StoryText}}
+      <p style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; color: #333333; line-height: 1.6;">{{excerpt $p.StoryText 2}}</p>
+      {{end}}
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #999999;">
+        {{if $p.Author}}By <span style="color: #333333; font-weight: 600;">{{$p.Author}}</span> &middot; {{end}}{{$p.Points}} points &middot; <a href="{{$p.CommentsURL}}" style="color: #326891; text-decoration: none;">{{$p.NumComments}} comments</a>
+      </p>
+      {{end}}{{end}}
+    </td>
+    {{end}}
+  </tr>
+  </table>
+</td>
+</tr>
+{{end}}
+
+{{if hasPrefix .Name "Reddit"}}
+{{$sec := nextSection}}
+<!-- Reddit Section Header -->
+<tr>
+<td style="padding: 20px 30px 0;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="padding-bottom: 10px; border-bottom: 2px solid #000000;">
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #326891;">{{.Name}}</p>
+    </td>
+  </tr>
+  </table>
+</td>
+</tr>
+<!-- Reddit Lead Article + Sidebar -->
+<tr>
+<td style="padding: 0 30px 16px;">
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+  <tr>
+    {{if isEven $sec}}
+    <!-- Lead left, sidebar right -->
+    <td width="58%" style="vertical-align: top; padding: 16px 20px 16px 0; border-right: 1px solid #e0ddd5;">
+      {{with redditLead .Data}}
+      <a href="{{.FullPermalink}}" style="text-decoration: none; color: #121212;">
+        <p style="margin: 0 0 8px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 24px; font-weight: 700; color: #121212; line-height: 1.2;">{{.Title}}</p>
+      </a>
+      {{if .Selftext}}
+      <div style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; color: #333333; line-height: 1.6;">{{markdown (excerpt .Selftext 2)}}</div>
+      {{end}}
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #999999;">
+        {{if .Author}}By <span style="color: #333333; font-weight: 600;">{{.Author}}</span> &middot; {{end}}{{.Score}} points &middot; {{.NumComments}} comments
+      </p>
+      {{end}}
+    </td>
+    <td width="42%" style="vertical-align: top; padding: 12px 0 12px 20px;">
+      {{range $i, $p := redditSidebar .Data}}
+      <div style="padding: 6px 0 10px;{{if $i}} border-top: 1px solid #e0ddd5; margin-top: 2px;{{end}}">
+        <a href="{{$p.FullPermalink}}" style="text-decoration: none; color: #121212;">
+          <p style="margin: 0 0 4px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; font-weight: 700; color: #121212; line-height: 1.3;">{{$p.Title}}</p>
+        </a>
+        <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #999999;">
+          {{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Score}} pts &middot; {{$p.NumComments}} comments
+        </p>
+      </div>
+      {{end}}
+    </td>
+    {{else}}
+    <!-- Sidebar left, lead right -->
+    <td width="42%" style="vertical-align: top; padding: 12px 20px 12px 0; border-right: 1px solid #e0ddd5;">
+      {{range $i, $p := redditSidebar .Data}}
+      <div style="padding: 6px 0 10px;{{if $i}} border-top: 1px solid #e0ddd5; margin-top: 2px;{{end}}">
+        <a href="{{$p.FullPermalink}}" style="text-decoration: none; color: #121212;">
+          <p style="margin: 0 0 4px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; font-weight: 700; color: #121212; line-height: 1.3;">{{$p.Title}}</p>
+        </a>
+        <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #999999;">
+          {{if $p.Author}}By {{$p.Author}} &middot; {{end}}{{$p.Score}} pts &middot; {{$p.NumComments}} comments
+        </p>
+      </div>
+      {{end}}
+    </td>
+    <td width="58%" style="vertical-align: top; padding: 16px 0 16px 20px;">
+      {{with redditLead .Data}}
+      <a href="{{.FullPermalink}}" style="text-decoration: none; color: #121212;">
+        <p style="margin: 0 0 8px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 24px; font-weight: 700; color: #121212; line-height: 1.2;">{{.Title}}</p>
+      </a>
+      {{if .Selftext}}
+      <div style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; color: #333333; line-height: 1.6;">{{markdown (excerpt .Selftext 2)}}</div>
+      {{end}}
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #999999;">
+        {{if .Author}}By <span style="color: #333333; font-weight: 600;">{{.Author}}</span> &middot; {{end}}{{.Score}} points &middot; {{.NumComments}} comments
+      </p>
+      {{end}}
+    </td>
+    {{end}}
+  </tr>
+  </table>
+</td>
+</tr>
+{{end}}
+
+{{end}}
+
+{{if eq .Name "Opinion"}}
+<!-- Opinion Section Header -->
+<tr>
+<td style="padding: 20px 30px 0;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td style="padding-bottom: 10px; border-bottom: 2px solid #000000;">
+      <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #326891;">Opinion</p>
+    </td>
+  </tr>
+  </table>
+</td>
+</tr>
+<!-- Opinion Tweets -->
+<tr>
+<td style="padding: 8px 30px 16px;">
+  {{range $i, $p := nitterPosts .Data}}
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="{{if $i}}border-top: 1px solid #e0ddd5; margin-top: 4px;{{end}}">
+  <tr>
+    <td width="52" style="vertical-align: top; padding: 12px 12px 12px 0;">
+      <img src="{{$p.AvatarURL}}" alt="@{{$p.Username}}" width="40" height="40" style="width: 40px; height: 40px; border-radius: 50%; display: block; background: #cccccc;" />
+    </td>
+    <td style="vertical-align: top; padding: 12px 0;">
+      <p style="margin: 0 0 4px; font-family: Arial, Helvetica, sans-serif; font-size: 12px;">
+        <strong style="color: #121212;">@{{$p.Username}}</strong>
+        <span style="color: #999999; padding-left: 4px;">{{nitterTimeAgo $p.PubDate}}</span>
+        {{if $p.IsRetweet}}<span style="color: #999999; padding-left: 4px; font-size: 10px;">RT</span>{{end}}
+      </p>
+      <p style="margin: 0 0 6px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 14px; color: #333333; line-height: 1.5;">
+        <a href="{{$p.Link}}" style="color: #333333; text-decoration: none;">{{$p.Text}}</a>
+      </p>
+      {{if $p.Images}}
+      <img src="{{index $p.Images 0}}" alt="" style="max-width: 400px; width: 100%; border-radius: 8px; display: block; margin-top: 4px;" />
+      {{end}}
+    </td>
+  </tr>
+  </table>
+  {{end}}
+</td>
+</tr>
+{{end}}
+
+{{end}}
+
+<!-- Footer -->
+<tr>
+<td style="padding: 30px 30px 20px; border-top: 2px solid #000000; margin-top: 20px;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+  <tr>
+    <td style="text-align: center;">
+      <p style="margin: 0 0 4px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 11px; color: #999999;">Delivered by <strong style="color: #666666;">Burrow</strong></p>
+      <p style="margin: 0; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 10px; color: #cccccc;">Your personal morning digest</p>
+    </td>
+  </tr>
+  </table>
+</td>
+</tr>
+
+</table>
+
+</div>
+</center>
+</body>
+</html>
