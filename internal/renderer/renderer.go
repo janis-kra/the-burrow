@@ -55,6 +55,7 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 		"isEven":        isEven,
 		"nitterPosts":   asNitterPosts,
 		"nitterTimeAgo": nitterTimeAgo,
+		"unsplashImage": asUnsplashImage,
 	}
 	textFuncMap := texttpl.FuncMap{
 		"weatherIcon": weatherIcon,
@@ -71,6 +72,7 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 		"isEven":        isEven,
 		"nitterPosts":   asNitterPosts,
 		"nitterTimeAgo": nitterTimeAgo,
+		"unsplashImage": asUnsplashImage,
 	}
 
 	ht, err := htmltpl.New("digest.html").Funcs(funcMap).Parse(htmlTemplate)
@@ -183,7 +185,12 @@ func renderMarkdown(s string) htmltpl.HTML {
 	if err := md.Convert([]byte(s), &buf); err != nil {
 		return htmltpl.HTML(htmltpl.HTMLEscapeString(s))
 	}
-	return htmltpl.HTML(buf.String())
+	out := strings.TrimSpace(buf.String())
+	// Unwrap single <p>...</p> to avoid extra block nesting in inline contexts.
+	if strings.HasPrefix(out, "<p>") && strings.HasSuffix(out, "</p>") && strings.Count(out, "<p>") == 1 {
+		out = out[3 : len(out)-4]
+	}
+	return htmltpl.HTML(out)
 }
 
 func excerpt(s string, maxSentences int) string {
@@ -234,6 +241,13 @@ func sliceFrom(start int, items any) any {
 func asNitterPosts(data any) []fetcher.NitterPost {
 	if posts, ok := data.([]fetcher.NitterPost); ok {
 		return posts
+	}
+	return nil
+}
+
+func asUnsplashImage(data any) *fetcher.UnsplashImage {
+	if img, ok := data.(*fetcher.UnsplashImage); ok {
+		return img
 	}
 	return nil
 }

@@ -37,6 +37,8 @@ type SourceConfig struct {
 	NitterInstance string   `yaml:"nitter_instance,omitempty"`
 	Usernames      []string `yaml:"usernames,omitempty"`
 	Limit          int      `yaml:"limit,omitempty"`
+	// Unsplash fields
+	Query string `yaml:"query,omitempty"`
 }
 
 var envVarPattern = regexp.MustCompile(`\$\{([^}]+)\}`)

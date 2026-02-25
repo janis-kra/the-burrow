@@ -84,9 +84,27 @@ a:hover { text-decoration: underline; }
 <td style="padding: 24px 30px 20px; text-align: center; border-bottom: 1px solid #e0ddd5;">
   <p style="margin: 0 0 16px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 26px; font-weight: 700; color: #121212; line-height: 1.25; letter-spacing: -0.3px;">Daily Highlight</p>
   <div style="max-width: 520px; margin: 0 auto;">
-    <p style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 17px; color: #333333; line-height: 1.65; font-style: italic;">&ldquo;{{.Text}}&rdquo;</p>
+    <div style="margin: 0 0 10px; font-family: Georgia, 'Times New Roman', Times, serif; font-size: 17px; color: #333333; line-height: 1.65; font-style: italic;">&ldquo;{{markdown .Text}}&rdquo;</div>
     <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #999999; letter-spacing: 0.5px;">{{if .BookAuthor}}<span style="color: #333333; font-weight: 600;">{{.BookAuthor}}</span>{{end}}{{if and .BookAuthor .BookTitle}} &mdash; {{end}}{{if .SourceURL}}<a href="{{.SourceURL}}" style="color: #326891; text-decoration: none; font-style: italic;">{{.BookTitle}}</a>{{else}}{{if .BookTitle}}<span style="font-style: italic;">{{.BookTitle}}</span>{{end}}{{end}}</p>
   </div>
+</td>
+</tr>
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{range .Results}}
+{{if not .Error}}
+{{if eq .Name "Unsplash"}}
+{{with unsplashImage .Data}}
+<!-- Unsplash Hero Image -->
+<tr>
+<td style="padding: 0 0 0; text-align: center; border-bottom: 1px solid #e0ddd5;">
+  <img src="{{.URL}}" alt="{{.AltDescription}}" width="680" style="width: 100%; max-width: 680px; height: auto; display: block;" />
+  <p style="margin: 6px 30px 12px; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #bbbbbb;">
+    Photo by <a href="{{.PhotographerURL}}" style="color: #999999; text-decoration: underline;">{{.PhotographerName}}</a> on <a href="https://unsplash.com/?utm_source=burrow&utm_medium=referral" style="color: #999999; text-decoration: underline;">Unsplash</a>
+  </p>
 </td>
 </tr>
 {{end}}
