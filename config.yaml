@@ -19,10 +19,13 @@ sources:
   - type: hackernews
 
   - type: reddit
-    subreddit: ClaudeCode
-
-  - type: reddit
-    subreddit: ExperiencedDevs
+    subreddits:
+      - ClaudeCode
+      - ExperiencedDevs
+      - de
+      - EU5
+      - Finanzen
+      - DnD
 
   - type: nitter
     nitter_instance: "https://nitter.net"
@@ -31,18 +34,6 @@ sources:
       - GeoffreyHuntley
       - WesBos
 
-  - type: reddit
-    subreddit: de
-
-  - type: reddit
-    subreddit: EU5
-
-  - type: reddit
-    subreddit: Finanzen
-
   - type: unsplash
     api_token: "${UNSPLASH_ACCESS_KEY}"
     query: "morning,nature,calm"
-
-  - type: reddit
-    subreddit: DnD

@@ -62,7 +62,11 @@ func main() {
 		case "hackernews":
 			fetchers = append(fetchers, fetcher.NewHackerNews(httpClient))
 		case "reddit":
-			fetchers = append(fetchers, fetcher.NewReddit(src.Subreddit))
+			subs := src.Subreddits
+			if len(subs) == 0 && src.Subreddit != "" {
+				subs = []string{src.Subreddit}
+			}
+			fetchers = append(fetchers, fetcher.NewReddit(subs))
 		case "nitter":
 			fetchers = append(fetchers, fetcher.NewNitter(httpClient, src.NitterInstance, src.Usernames, src.Limit))
 		case "unsplash":
