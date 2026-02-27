@@ -33,10 +33,6 @@ sources:
       - addyosmani
     limit: 6
 
-  - type: unsplash
-    api_token: "${UNSPLASH_ACCESS_KEY}"
-    query: "morning,nature,calm"
-
   - type: reddit
     label: "General"
     subreddits:

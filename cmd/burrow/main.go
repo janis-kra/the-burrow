@@ -52,7 +52,6 @@ func main() {
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 
 	var fetchers []fetcher.Fetcher
-	var unsplashFetcher *fetcher.Unsplash
 	for _, src := range cfg.Sources {
 		switch src.Type {
 		case "weather":
@@ -69,8 +68,6 @@ func main() {
 			fetchers = append(fetchers, fetcher.NewReddit(subs, src.Label))
 		case "nitter":
 			fetchers = append(fetchers, fetcher.NewNitter(httpClient, src.NitterInstance, src.Usernames, src.Limit))
-		case "unsplash":
-			unsplashFetcher = fetcher.NewUnsplash(httpClient, src.APIToken, src.Query)
 		default:
 			log.Fatalf("Unknown source type: %q", src.Type)
 		}
@@ -94,7 +91,6 @@ func main() {
 		edition := latestCfg.Edition + 1
 
 		results := agg.FetchAll(ctx)
-		results = fetchUnsplash(ctx, unsplashFetcher, results)
 
 		email, err := rend.Render(results, edition)
 		if err != nil {
@@ -120,7 +116,6 @@ func main() {
 		defer cancel()
 
 		results := agg.FetchAll(ctx)
-		results = fetchUnsplash(ctx, unsplashFetcher, results)
 
 		email, err := rend.Render(results, cfg.Edition+1)
 		if err != nil {
@@ -174,34 +169,4 @@ func main() {
 
 	log.Println("Shutting down...")
 	c.Stop()
-}
-
-// fetchUnsplash runs the Unsplash fetcher after the aggregator, using the
-// Readwise highlight's BookTitle as the topic query for contextual imagery.
-func fetchUnsplash(ctx context.Context, uf *fetcher.Unsplash, results []fetcher.Result) []fetcher.Result {
-	if uf == nil {
-		return results
-	}
-
-	// Extract BookTitle from Readwise results for topic-aware image search
-	for _, r := range results {
-		if r.Name == "Readwise" && r.Error == nil {
-			if highlights, ok := r.Data.([]fetcher.Highlight); ok && len(highlights) > 0 {
-				if highlights[0].BookTitle != "" {
-					uf.SetTopicQuery(highlights[0].BookTitle)
-				}
-			}
-		}
-	}
-
-	data, err := uf.Fetch(ctx)
-	results = append(results, fetcher.Result{
-		Name:  uf.Name(),
-		Data:  data,
-		Error: err,
-	})
-	if err != nil {
-		log.Printf("Unsplash fetch failed: %v", err)
-	}
-	return results
 }

@@ -60,7 +60,6 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 		"nitterLeftCol":  nitterLeftCol,
 		"nitterRightCol": nitterRightCol,
 		"nitterTimeAgo":  nitterTimeAgo,
-		"unsplashImage":  asUnsplashImage,
 	}
 	textFuncMap := texttpl.FuncMap{
 		"weatherIcon": weatherIcon,
@@ -79,7 +78,6 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 		"nitterLeftCol":  nitterLeftCol,
 		"nitterRightCol": nitterRightCol,
 		"nitterTimeAgo":  nitterTimeAgo,
-		"unsplashImage":  asUnsplashImage,
 	}
 
 	ht, err := htmltpl.New("digest.html").Funcs(funcMap).Parse(htmlTemplate)
@@ -275,13 +273,6 @@ func nitterRightCol(data any) []fetcher.NitterPost {
 		return nil
 	}
 	return posts[half:]
-}
-
-func asUnsplashImage(data any) *fetcher.UnsplashImage {
-	if img, ok := data.(*fetcher.UnsplashImage); ok {
-		return img
-	}
-	return nil
 }
 
 func nitterTimeAgo(t time.Time) string {

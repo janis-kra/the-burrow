@@ -54,16 +54,6 @@ func TestFullPipelineRender(t *testing.T) {
 			}},
 		},
 		{
-			Name: "Unsplash",
-			Data: &fetcher.UnsplashImage{
-				URL:              "https://images.unsplash.com/photo-test",
-				AltDescription:   "A sunset over mountains",
-				PhotographerName: "Test Photographer",
-				PhotographerURL:  "https://unsplash.com/@test?utm_source=burrow&utm_medium=referral",
-				Query:            "nature",
-			},
-		},
-		{
 			Name: "Hacker News",
 			Data: []fetcher.HNPost{
 				{Title: "Go 1.25 Released", Points: 500, NumComments: 200, ObjectID: "1", URL: "https://go.dev/blog", Author: "golang"},
@@ -102,8 +92,6 @@ func TestFullPipelineRender(t *testing.T) {
 		{"weather temp", "18"},
 		{"readwise quote", "great work"},
 		{"readwise author", "Walter Isaacson"},
-		{"unsplash image", "photo-test"},
-		{"unsplash photographer", "Test Photographer"},
 		{"hn title", "Go 1.25 Released"},
 		{"hn points", "500"},
 		{"reddit title", "TIL about Go generics"},
