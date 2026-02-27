@@ -1,7 +1,7 @@
 BURROW DIGEST — {{.Date}}
 ========================================
 {{range .Results}}
---- {{.Name}} ---
+--- {{.Name}}{{if .Label}} ({{.Label}}){{end}} ---
 {{if .Error}}[Could not load this module]
 {{else}}{{if eq .Name "Hacker News"}}{{range hnPosts .Data}}
   * {{.Title}}

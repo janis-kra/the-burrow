@@ -34,12 +34,15 @@ type redditResponse struct {
 
 type Reddit struct {
 	subreddits []string
+	label      string
 	baseURL    string
 }
 
-func NewReddit(subreddits []string) *Reddit {
-	return &Reddit{subreddits: subreddits, baseURL: "https://www.reddit.com"}
+func NewReddit(subreddits []string, label string) *Reddit {
+	return &Reddit{subreddits: subreddits, label: label, baseURL: "https://www.reddit.com"}
 }
+
+func (r *Reddit) Label() string { return r.label }
 
 func (r *Reddit) Name() string { return "Reddit" }
 

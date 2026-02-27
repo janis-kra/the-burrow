@@ -31,8 +31,13 @@ func (a *Aggregator) FetchAll(ctx context.Context) []fetcher.Result {
 			} else {
 				log.Printf("Fetched %s successfully", ft.Name())
 			}
+			var label string
+			if labeler, ok := ft.(fetcher.Labeler); ok {
+				label = labeler.Label()
+			}
 			results[idx] = fetcher.Result{
 				Name:  ft.Name(),
+				Label: label,
 				Data:  data,
 				Error: err,
 			}

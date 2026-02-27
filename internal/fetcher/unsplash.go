@@ -34,6 +34,7 @@ type Unsplash struct {
 	accessKey     string
 	fallbackQuery string
 	topicQuery    string
+	baseURL       string
 }
 
 func NewUnsplash(client *http.Client, accessKey, fallbackQuery string) *Unsplash {
@@ -41,6 +42,7 @@ func NewUnsplash(client *http.Client, accessKey, fallbackQuery string) *Unsplash
 		client:        client,
 		accessKey:     accessKey,
 		fallbackQuery: fallbackQuery,
+		baseURL:       "https://api.unsplash.com",
 	}
 }
 
@@ -67,8 +69,8 @@ func (u *Unsplash) Fetch(ctx context.Context) (any, error) {
 }
 
 func (u *Unsplash) fetchRandom(ctx context.Context, query string) (*UnsplashImage, error) {
-	endpoint := fmt.Sprintf("https://api.unsplash.com/photos/random?query=%s&orientation=landscape&content_filter=high",
-		url.QueryEscape(query))
+	endpoint := fmt.Sprintf("%s/photos/random?query=%s&orientation=landscape&content_filter=high",
+		u.baseURL, url.QueryEscape(query))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {

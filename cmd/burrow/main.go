@@ -66,7 +66,7 @@ func main() {
 			if len(subs) == 0 && src.Subreddit != "" {
 				subs = []string{src.Subreddit}
 			}
-			fetchers = append(fetchers, fetcher.NewReddit(subs))
+			fetchers = append(fetchers, fetcher.NewReddit(subs, src.Label))
 		case "nitter":
 			fetchers = append(fetchers, fetcher.NewNitter(httpClient, src.NitterInstance, src.Usernames, src.Limit))
 		case "unsplash":

@@ -34,6 +34,7 @@ type SourceConfig struct {
 	// Reddit fields
 	Subreddit  string   `yaml:"subreddit,omitempty"`
 	Subreddits []string `yaml:"subreddits,omitempty"`
+	Label      string   `yaml:"label,omitempty"`
 	// Nitter fields
 	NitterInstance string   `yaml:"nitter_instance,omitempty"`
 	Usernames      []string `yaml:"usernames,omitempty"`

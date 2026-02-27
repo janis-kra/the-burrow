@@ -14,9 +14,12 @@ import (
 )
 
 type DigestData struct {
-	Date    string
-	Edition int
-	Results []fetcher.Result
+	Date      string
+	DayOfWeek string
+	ShortDate string
+	DateSeed  string
+	Edition   int
+	Results   []fetcher.Result
 }
 
 type RenderedEmail struct {
@@ -53,9 +56,11 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 		"slice":       sliceFrom,
 		"nextSection":   nextSection,
 		"isEven":        isEven,
-		"nitterPosts":   asNitterPosts,
-		"nitterTimeAgo": nitterTimeAgo,
-		"unsplashImage": asUnsplashImage,
+		"nitterPosts":    asNitterPosts,
+		"nitterLeftCol":  nitterLeftCol,
+		"nitterRightCol": nitterRightCol,
+		"nitterTimeAgo":  nitterTimeAgo,
+		"unsplashImage":  asUnsplashImage,
 	}
 	textFuncMap := texttpl.FuncMap{
 		"weatherIcon": weatherIcon,
@@ -70,9 +75,11 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 		"slice":       sliceFrom,
 		"nextSection":   func() int { return 0 },
 		"isEven":        isEven,
-		"nitterPosts":   asNitterPosts,
-		"nitterTimeAgo": nitterTimeAgo,
-		"unsplashImage": asUnsplashImage,
+		"nitterPosts":    asNitterPosts,
+		"nitterLeftCol":  nitterLeftCol,
+		"nitterRightCol": nitterRightCol,
+		"nitterTimeAgo":  nitterTimeAgo,
+		"unsplashImage":  asUnsplashImage,
 	}
 
 	ht, err := htmltpl.New("digest.html").Funcs(funcMap).Parse(htmlTemplate)
@@ -91,10 +98,14 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 func (r *Renderer) Render(results []fetcher.Result, edition int) (*RenderedEmail, error) {
 	*r.sectionCounter = 0
 
+	now := time.Now()
 	data := DigestData{
-		Date:    time.Now().Format("Monday, January 2, 2006"),
-		Edition: edition,
-		Results: results,
+		Date:      now.Format("Monday, January 2, 2006"),
+		DayOfWeek: now.Format("Monday"),
+		ShortDate: now.Format("January 2, 2006"),
+		DateSeed:  now.Format("2006-01-02"),
+		Edition:   edition,
+		Results:   results,
 	}
 
 	var htmlBuf bytes.Buffer
@@ -243,6 +254,27 @@ func asNitterPosts(data any) []fetcher.NitterPost {
 		return posts
 	}
 	return nil
+}
+
+func nitterLeftCol(data any) []fetcher.NitterPost {
+	posts := asNitterPosts(data)
+	if len(posts) == 0 {
+		return nil
+	}
+	half := (len(posts) + 1) / 2
+	return posts[:half]
+}
+
+func nitterRightCol(data any) []fetcher.NitterPost {
+	posts := asNitterPosts(data)
+	if len(posts) == 0 {
+		return nil
+	}
+	half := (len(posts) + 1) / 2
+	if half >= len(posts) {
+		return nil
+	}
+	return posts[half:]
 }
 
 func asUnsplashImage(data any) *fetcher.UnsplashImage {

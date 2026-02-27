@@ -1,5 +1,5 @@
 schedule: "0 7 * * *"  # 7:00 AM daily
-edition: 0
+edition: 3
 
 email:
   from: "The Burrow<mail@burrow.janiskrasemann.com>"
@@ -19,6 +19,7 @@ sources:
   - type: hackernews
 
   - type: reddit
+    label: "Dev & Tech"
     subreddits:
       - ClaudeCode
       - ExperiencedDevs
@@ -29,12 +30,15 @@ sources:
       - bcherny
       - GeoffreyHuntley
       - WesBos
+      - addyosmani
+    limit: 6
 
   - type: unsplash
     api_token: "${UNSPLASH_ACCESS_KEY}"
     query: "morning,nature,calm"
 
   - type: reddit
+    label: "General"
     subreddits:
       - de
       - EU5
