@@ -1,5 +1,5 @@
 schedule: "0 7 * * *"  # 7:00 AM daily
-edition: 3
+edition: 5
 
 email:
   from: "The Burrow<mail@burrow.janiskrasemann.com>"

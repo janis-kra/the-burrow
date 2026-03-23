@@ -24,7 +24,7 @@ func TestRedditFetch(t *testing.T) {
 	}))
 	defer server.Close()
 
-	reddit := NewReddit([]string{"de"})
+	reddit := NewReddit([]string{"de"}, "")
 	reddit.baseURL = server.URL
 
 	result, err := reddit.Fetch(context.Background())
@@ -85,7 +85,7 @@ func TestRedditMultiSubreddit(t *testing.T) {
 	}))
 	defer server.Close()
 
-	reddit := NewReddit([]string{"golang", "rust", "python"})
+	reddit := NewReddit([]string{"golang", "rust", "python"}, "")
 	reddit.baseURL = server.URL
 
 	result, err := reddit.Fetch(context.Background())
@@ -154,7 +154,7 @@ func TestRedditGuaranteeLowScoreSubreddit(t *testing.T) {
 	}))
 	defer server.Close()
 
-	reddit := NewReddit([]string{"popular", "niche"})
+	reddit := NewReddit([]string{"popular", "niche"}, "")
 	reddit.baseURL = server.URL
 
 	result, err := reddit.Fetch(context.Background())
