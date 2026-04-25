@@ -18,15 +18,17 @@ type Highlight struct {
 type readwiseHighlight struct {
 	Text       string `json:"text"`
 	ExternalID string `json:"external_id"`
-	Book       struct {
-		Title     string `json:"title"`
-		Author    string `json:"author"`
-		SourceURL string `json:"source_url"`
-	} `json:"book"`
+	BookID     int    `json:"book_id"`
 }
 
 type readwiseResponse struct {
 	Results []readwiseHighlight `json:"results"`
+}
+
+type readwiseBook struct {
+	Title     string `json:"title"`
+	Author    string `json:"author"`
+	SourceURL string `json:"source_url"`
 }
 
 type readerDocument struct {
@@ -43,6 +45,7 @@ type Readwise struct {
 	apiToken  string
 	baseURL   string
 	readerURL string
+	bookURL   string
 }
 
 func NewReadwise(client *http.Client, apiToken string) *Readwise {
@@ -51,6 +54,7 @@ func NewReadwise(client *http.Client, apiToken string) *Readwise {
 		apiToken:  apiToken,
 		baseURL:   "https://readwise.io/api/v2/highlights/",
 		readerURL: "https://readwise.io/api/v3/list/",
+		bookURL:   "https://readwise.io/api/v2/books/",
 	}
 }
 
@@ -156,10 +160,42 @@ func (r *Readwise) Fetch(ctx context.Context) (any, error) {
 	}
 
 	pick := readHighlights[rand.IntN(len(readHighlights))]
+
+	// The /highlights/ endpoint only returns book_id; book metadata lives under /books/{id}/.
+	book, err := r.fetchBook(ctx, pick.BookID)
+	if err != nil {
+		book = readwiseBook{}
+	}
+
 	return []Highlight{{
 		Text:       pick.Text,
-		BookTitle:  pick.Book.Title,
-		BookAuthor: pick.Book.Author,
-		SourceURL:  pick.Book.SourceURL,
+		BookTitle:  book.Title,
+		BookAuthor: book.Author,
+		SourceURL:  book.SourceURL,
 	}}, nil
+}
+
+func (r *Readwise) fetchBook(ctx context.Context, bookID int) (readwiseBook, error) {
+	url := fmt.Sprintf("%s%d/", r.bookURL, bookID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return readwiseBook{}, fmt.Errorf("creating book request: %w", err)
+	}
+	req.Header.Set("Authorization", "Token "+r.apiToken)
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return readwiseBook{}, fmt.Errorf("fetching book: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return readwiseBook{}, fmt.Errorf("books API returned status %d", resp.StatusCode)
+	}
+
+	var book readwiseBook
+	if err := json.NewDecoder(resp.Body).Decode(&book); err != nil {
+		return readwiseBook{}, fmt.Errorf("decoding book response: %w", err)
+	}
+	return book, nil
 }
