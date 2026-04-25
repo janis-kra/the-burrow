@@ -1,5 +1,5 @@
-schedule: "0 7 * * *"  # 7:00 AM daily
-edition: 5
+schedule: "30 6 * * *"  # 6:30 AM daily
+edition: 61
 
 email:
   from: "The Burrow<mail@burrow.janiskrasemann.com>"
@@ -23,6 +23,7 @@ sources:
     subreddits:
       - ClaudeCode
       - ExperiencedDevs
+      - webdev
 
   - type: nitter
     nitter_instance: "https://nitter.net"
