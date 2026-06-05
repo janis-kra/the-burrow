@@ -2,44 +2,61 @@ package fetcher
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/xml"
 	"fmt"
-	"os/exec"
+	"net/http"
 	"sort"
+	"strings"
 	"sync"
 )
 
 type RedditPost struct {
-	Title       string `json:"title"`
-	Score       int    `json:"score"`
-	NumComments int    `json:"num_comments"`
-	Permalink   string `json:"permalink"`
-	URL         string `json:"url"`
-	Author      string `json:"author"`
-	Selftext    string `json:"selftext"`
-	Subreddit   string `json:"subreddit"`
+	Title       string
+	Score       int
+	NumComments int
+	Permalink   string
+	URL         string
+	Author      string
+	Selftext    string
+	Subreddit   string
 }
 
 func (p RedditPost) FullPermalink() string {
 	return "https://www.reddit.com" + p.Permalink
 }
 
-type redditResponse struct {
-	Data struct {
-		Children []struct {
-			Data RedditPost `json:"data"`
-		} `json:"children"`
-	} `json:"data"`
+type atomFeed struct {
+	Entries []atomEntry `xml:"http://www.w3.org/2005/Atom entry"`
+}
+
+type atomEntry struct {
+	Title  string     `xml:"http://www.w3.org/2005/Atom title"`
+	Link   atomLink   `xml:"http://www.w3.org/2005/Atom link"`
+	Author atomAuthor `xml:"http://www.w3.org/2005/Atom author"`
+}
+
+type atomLink struct {
+	Href string `xml:"href,attr"`
+}
+
+type atomAuthor struct {
+	Name string `xml:"http://www.w3.org/2005/Atom name"`
 }
 
 type Reddit struct {
+	client     *http.Client
 	subreddits []string
 	label      string
 	baseURL    string
 }
 
-func NewReddit(subreddits []string, label string) *Reddit {
-	return &Reddit{subreddits: subreddits, label: label, baseURL: "https://www.reddit.com"}
+func NewReddit(client *http.Client, subreddits []string, label string) *Reddit {
+	return &Reddit{
+		client:     client,
+		subreddits: subreddits,
+		label:      label,
+		baseURL:    "https://www.reddit.com",
+	}
 }
 
 func (r *Reddit) Label() string { return r.label }
@@ -90,37 +107,48 @@ func (r *Reddit) Fetch(ctx context.Context) (any, error) {
 }
 
 func (r *Reddit) fetchSubreddit(ctx context.Context, subreddit string) ([]RedditPost, error) {
-	url := fmt.Sprintf("%s/r/%s/top/.json?t=day&limit=5", r.baseURL, subreddit)
+	apiURL := fmt.Sprintf("%s/r/%s/top.rss?t=day&limit=5", r.baseURL, subreddit)
 
-	cmd := exec.CommandContext(ctx, "curl", "-s",
-		"--user-agent", "burrow/1.0 (by /u/kaktus_jack; info@burrow.janiskrasemann.com)",
-		url,
-	)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request for r/%s: %w", subreddit, err)
+	}
+	req.Header.Set("User-Agent", "burrow/1.0 (by /u/kaktus_jack; info@burrow.janiskrasemann.com)")
 
-	out, err := cmd.Output()
+	resp, err := r.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching reddit posts for r/%s: %w", subreddit, err)
 	}
+	defer resp.Body.Close()
 
-	var result redditResponse
-	if err := json.Unmarshal(out, &result); err != nil {
-		return nil, fmt.Errorf("decoding Reddit response for r/%s: %w", subreddit, err)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Reddit RSS returned status %d for r/%s", resp.StatusCode, subreddit)
 	}
 
-	posts := make([]RedditPost, 0, len(result.Data.Children))
-	for _, child := range result.Data.Children {
-		p := child.Data
-		if p.Subreddit == "" {
-			p.Subreddit = subreddit
-		}
-		posts = append(posts, p)
+	var feed atomFeed
+	if err := xml.NewDecoder(resp.Body).Decode(&feed); err != nil {
+		return nil, fmt.Errorf("decoding Reddit RSS for r/%s: %w", subreddit, err)
+	}
+
+	posts := make([]RedditPost, 0, len(feed.Entries))
+	for _, e := range feed.Entries {
+		permalink := strings.TrimPrefix(e.Link.Href, "https://www.reddit.com")
+		author := strings.TrimPrefix(e.Author.Name, "/u/")
+		posts = append(posts, RedditPost{
+			Title:     e.Title,
+			Permalink: permalink,
+			Author:    author,
+			Subreddit: subreddit,
+		})
 	}
 
 	return posts, nil
 }
 
 // mergePosts combines posts from multiple subreddits, guaranteeing at least one
-// post per subreddit. Remaining slots are filled with the highest-scored posts.
+// post per subreddit. Remaining slots are filled by the original feed order
+// (which is already ranked by score). Uses stable sort to preserve feed order
+// when scores are equal.
 func mergePosts(bySubreddit map[string][]RedditPost, subredditOrder []string) []RedditPost {
 	total := len(bySubreddit)
 	if total < 5 {
@@ -130,7 +158,6 @@ func mergePosts(bySubreddit map[string][]RedditPost, subredditOrder []string) []
 	var guaranteed []RedditPost
 	used := make(map[string]bool)
 
-	// Take the top post from each subreddit (guarantee)
 	for _, sub := range subredditOrder {
 		posts := bySubreddit[sub]
 		if len(posts) > 0 {
@@ -139,31 +166,26 @@ func mergePosts(bySubreddit map[string][]RedditPost, subredditOrder []string) []
 		}
 	}
 
-	// Collect remaining posts from all subreddits
 	var remaining []RedditPost
 	for _, sub := range subredditOrder {
-		posts := bySubreddit[sub]
-		for _, p := range posts {
+		for _, p := range bySubreddit[sub] {
 			if !used[p.Permalink] {
 				remaining = append(remaining, p)
 			}
 		}
 	}
 
-	// Sort remaining by score descending
-	sort.Slice(remaining, func(i, j int) bool {
+	sort.SliceStable(remaining, func(i, j int) bool {
 		return remaining[i].Score > remaining[j].Score
 	})
 
-	// Fill up to total
 	result := guaranteed
 	spotsLeft := total - len(result)
 	for i := 0; i < len(remaining) && i < spotsLeft; i++ {
 		result = append(result, remaining[i])
 	}
 
-	// Sort final result by score descending
-	sort.Slice(result, func(i, j int) bool {
+	sort.SliceStable(result, func(i, j int) bool {
 		return result[i].Score > result[j].Score
 	})
 

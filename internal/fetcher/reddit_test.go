@@ -2,29 +2,47 @@ package fetcher
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func atomPost(subreddit, id, title, author string) string {
+	return fmt.Sprintf(`<entry xmlns="http://www.w3.org/2005/Atom">
+		<title>%s</title>
+		<link href="https://www.reddit.com/r/%s/comments/%s/%s/" />
+		<author><name>/u/%s</name></author>
+		<id>t3_%s</id>
+	</entry>`, title, subreddit, id, id, author, id)
+}
+
+func atomFeedXML(subreddit string, entries ...string) string {
+	body := ""
+	for _, e := range entries {
+		body += e
+	}
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>top scoring links : %s</title>
+%s
+</feed>`, subreddit, body)
+}
 
 func TestRedditFetch(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("User-Agent") != "burrow/1.0 (by /u/kaktus_jack; info@burrow.janiskrasemann.com)" {
 			t.Errorf("unexpected User-Agent: %q", r.Header.Get("User-Agent"))
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{
-			"data": {
-				"children": [
-					{"data": {"title": "Post 1", "score": 500, "num_comments": 100, "permalink": "/r/de/comments/abc/post_1/", "url": "https://example.com", "subreddit": "de"}},
-					{"data": {"title": "Post 2", "score": 300, "num_comments": 50, "permalink": "/r/de/comments/def/post_2/", "url": "https://example2.com", "subreddit": "de"}}
-				]
-			}
-		}`))
+		w.Header().Set("Content-Type", "application/atom+xml")
+		fmt.Fprint(w, atomFeedXML("de",
+			atomPost("de", "abc", "Post 1", "user1"),
+			atomPost("de", "def", "Post 2", "user2"),
+		))
 	}))
 	defer server.Close()
 
-	reddit := NewReddit([]string{"de"}, "")
+	reddit := NewReddit(http.DefaultClient, []string{"de"}, "")
 	reddit.baseURL = server.URL
 
 	result, err := reddit.Fetch(context.Background())
@@ -46,46 +64,40 @@ func TestRedditFetch(t *testing.T) {
 	if posts[0].Subreddit != "de" {
 		t.Errorf("expected subreddit 'de', got %q", posts[0].Subreddit)
 	}
+	if posts[0].Author != "user1" {
+		t.Errorf("expected author 'user1', got %q", posts[0].Author)
+	}
+	if posts[0].FullPermalink() != "https://www.reddit.com/r/de/comments/abc/abc/" {
+		t.Errorf("unexpected permalink: %q", posts[0].FullPermalink())
+	}
 }
 
 func TestRedditMultiSubreddit(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/atom+xml")
 		switch r.URL.Path {
-		case "/r/golang/top/.json":
-			w.Write([]byte(`{
-				"data": {
-					"children": [
-						{"data": {"title": "Go Post 1", "score": 1000, "num_comments": 200, "permalink": "/r/golang/comments/aaa/go_1/", "subreddit": "golang"}},
-						{"data": {"title": "Go Post 2", "score": 800, "num_comments": 150, "permalink": "/r/golang/comments/bbb/go_2/", "subreddit": "golang"}},
-						{"data": {"title": "Go Post 3", "score": 600, "num_comments": 100, "permalink": "/r/golang/comments/ccc/go_3/", "subreddit": "golang"}}
-					]
-				}
-			}`))
-		case "/r/rust/top/.json":
-			w.Write([]byte(`{
-				"data": {
-					"children": [
-						{"data": {"title": "Rust Post 1", "score": 900, "num_comments": 180, "permalink": "/r/rust/comments/ddd/rust_1/", "subreddit": "rust"}},
-						{"data": {"title": "Rust Post 2", "score": 700, "num_comments": 120, "permalink": "/r/rust/comments/eee/rust_2/", "subreddit": "rust"}}
-					]
-				}
-			}`))
-		case "/r/python/top/.json":
-			w.Write([]byte(`{
-				"data": {
-					"children": [
-						{"data": {"title": "Python Post 1", "score": 50, "num_comments": 10, "permalink": "/r/python/comments/fff/py_1/", "subreddit": "python"}}
-					]
-				}
-			}`))
+		case "/r/golang/top.rss":
+			fmt.Fprint(w, atomFeedXML("golang",
+				atomPost("golang", "aaa", "Go Post 1", "gopher1"),
+				atomPost("golang", "bbb", "Go Post 2", "gopher2"),
+				atomPost("golang", "ccc", "Go Post 3", "gopher3"),
+			))
+		case "/r/rust/top.rss":
+			fmt.Fprint(w, atomFeedXML("rust",
+				atomPost("rust", "ddd", "Rust Post 1", "rustacean1"),
+				atomPost("rust", "eee", "Rust Post 2", "rustacean2"),
+			))
+		case "/r/python/top.rss":
+			fmt.Fprint(w, atomFeedXML("python",
+				atomPost("python", "fff", "Python Post 1", "pythonista1"),
+			))
 		default:
-			w.Write([]byte(`{"data": {"children": []}}`))
+			fmt.Fprint(w, atomFeedXML("unknown"))
 		}
 	}))
 	defer server.Close()
 
-	reddit := NewReddit([]string{"golang", "rust", "python"}, "")
+	reddit := NewReddit(http.DefaultClient, []string{"golang", "rust", "python"}, "")
 	reddit.baseURL = server.URL
 
 	result, err := reddit.Fetch(context.Background())
@@ -98,12 +110,10 @@ func TestRedditMultiSubreddit(t *testing.T) {
 		t.Fatal("result is not []RedditPost")
 	}
 
-	// With 3 subreddits, total should be max(5, 3) = 5
 	if len(posts) != 5 {
 		t.Errorf("expected 5 posts, got %d", len(posts))
 	}
 
-	// Verify at least one post from each subreddit
 	subredditSeen := make(map[string]bool)
 	for _, p := range posts {
 		subredditSeen[p.Subreddit] = true
@@ -113,48 +123,31 @@ func TestRedditMultiSubreddit(t *testing.T) {
 			t.Errorf("expected at least one post from r/%s", sub)
 		}
 	}
-
-	// Verify posts are sorted by score descending
-	for i := 1; i < len(posts); i++ {
-		if posts[i].Score > posts[i-1].Score {
-			t.Errorf("posts not sorted by score: post %d (score %d) > post %d (score %d)",
-				i, posts[i].Score, i-1, posts[i-1].Score)
-		}
-	}
 }
 
 func TestRedditGuaranteeLowScoreSubreddit(t *testing.T) {
-	// Test that a low-score subreddit still gets at least one post
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/atom+xml")
 		switch r.URL.Path {
-		case "/r/popular/top/.json":
-			w.Write([]byte(`{
-				"data": {
-					"children": [
-						{"data": {"title": "Popular 1", "score": 10000, "permalink": "/r/popular/1/", "subreddit": "popular"}},
-						{"data": {"title": "Popular 2", "score": 9000, "permalink": "/r/popular/2/", "subreddit": "popular"}},
-						{"data": {"title": "Popular 3", "score": 8000, "permalink": "/r/popular/3/", "subreddit": "popular"}},
-						{"data": {"title": "Popular 4", "score": 7000, "permalink": "/r/popular/4/", "subreddit": "popular"}},
-						{"data": {"title": "Popular 5", "score": 6000, "permalink": "/r/popular/5/", "subreddit": "popular"}}
-					]
-				}
-			}`))
-		case "/r/niche/top/.json":
-			w.Write([]byte(`{
-				"data": {
-					"children": [
-						{"data": {"title": "Niche 1", "score": 5, "permalink": "/r/niche/1/", "subreddit": "niche"}}
-					]
-				}
-			}`))
+		case "/r/popular/top.rss":
+			fmt.Fprint(w, atomFeedXML("popular",
+				atomPost("popular", "p1", "Popular 1", "u1"),
+				atomPost("popular", "p2", "Popular 2", "u2"),
+				atomPost("popular", "p3", "Popular 3", "u3"),
+				atomPost("popular", "p4", "Popular 4", "u4"),
+				atomPost("popular", "p5", "Popular 5", "u5"),
+			))
+		case "/r/niche/top.rss":
+			fmt.Fprint(w, atomFeedXML("niche",
+				atomPost("niche", "n1", "Niche 1", "u6"),
+			))
 		default:
-			w.Write([]byte(`{"data": {"children": []}}`))
+			fmt.Fprint(w, atomFeedXML("unknown"))
 		}
 	}))
 	defer server.Close()
 
-	reddit := NewReddit([]string{"popular", "niche"}, "")
+	reddit := NewReddit(http.DefaultClient, []string{"popular", "niche"}, "")
 	reddit.baseURL = server.URL
 
 	result, err := reddit.Fetch(context.Background())
@@ -203,12 +196,10 @@ func TestMergePosts(t *testing.T) {
 
 	posts := mergePosts(bySubreddit, order)
 
-	// max(5, 3) = 5 posts
 	if len(posts) != 5 {
 		t.Errorf("expected 5 posts, got %d", len(posts))
 	}
 
-	// Verify each subreddit is represented
 	seen := make(map[string]bool)
 	for _, p := range posts {
 		seen[p.Subreddit] = true
@@ -219,7 +210,6 @@ func TestMergePosts(t *testing.T) {
 		}
 	}
 
-	// Verify sorted by score
 	for i := 1; i < len(posts); i++ {
 		if posts[i].Score > posts[i-1].Score {
 			t.Errorf("posts not sorted: %d > %d", posts[i].Score, posts[i-1].Score)
