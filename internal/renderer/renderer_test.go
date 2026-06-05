@@ -80,7 +80,7 @@ func TestExcerpt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := excerpt(tt.input, tt.max)
-			if got != tt.expected {
+			if string(got) != tt.expected {
 				t.Errorf("excerpt(%q, %d) = %q, want %q", tt.input, tt.max, got, tt.expected)
 			}
 		})

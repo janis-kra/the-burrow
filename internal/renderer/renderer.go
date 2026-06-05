@@ -202,7 +202,7 @@ func renderMarkdown(s string) htmltpl.HTML {
 	return htmltpl.HTML(out)
 }
 
-func excerpt(s string, maxSentences int) string {
+func excerpt(s string, maxSentences int) htmltpl.HTML {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return ""
@@ -227,7 +227,7 @@ func excerpt(s string, maxSentences int) string {
 	if len(result) > 280 {
 		result = result[:277] + "..."
 	}
-	return result
+	return htmltpl.HTML(result)
 }
 
 func sliceFrom(start int, items any) any {
