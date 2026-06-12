@@ -44,6 +44,7 @@ func TestRedditFetch(t *testing.T) {
 
 	reddit := NewReddit(http.DefaultClient, []string{"de"}, "")
 	reddit.baseURL = server.URL
+	reddit.pacer = newPacer(0)
 
 	result, err := reddit.Fetch(context.Background())
 	if err != nil {
@@ -99,6 +100,7 @@ func TestRedditMultiSubreddit(t *testing.T) {
 
 	reddit := NewReddit(http.DefaultClient, []string{"golang", "rust", "python"}, "")
 	reddit.baseURL = server.URL
+	reddit.pacer = newPacer(0)
 
 	result, err := reddit.Fetch(context.Background())
 	if err != nil {
@@ -149,6 +151,7 @@ func TestRedditGuaranteeLowScoreSubreddit(t *testing.T) {
 
 	reddit := NewReddit(http.DefaultClient, []string{"popular", "niche"}, "")
 	reddit.baseURL = server.URL
+	reddit.pacer = newPacer(0)
 
 	result, err := reddit.Fetch(context.Background())
 	if err != nil {

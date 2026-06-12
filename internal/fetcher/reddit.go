@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type RedditPost struct {
@@ -43,11 +45,50 @@ type atomAuthor struct {
 	Name string `xml:"http://www.w3.org/2005/Atom name"`
 }
 
+// pacer enforces a minimum interval between requests. Reddit rate-limits
+// unauthenticated RSS requests per IP, so all Reddit fetcher instances share
+// one pacer to avoid bursts when multiple fetchers run concurrently.
+type pacer struct {
+	mu       sync.Mutex
+	interval time.Duration
+	next     time.Time
+}
+
+func newPacer(interval time.Duration) *pacer {
+	return &pacer{interval: interval}
+}
+
+func (p *pacer) wait(ctx context.Context) error {
+	p.mu.Lock()
+	now := time.Now()
+	if p.next.Before(now) {
+		p.next = now
+	}
+	delay := p.next.Sub(now)
+	p.next = p.next.Add(p.interval)
+	p.mu.Unlock()
+
+	if delay <= 0 {
+		return nil
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+var redditPacer = newPacer(4 * time.Second)
+
 type Reddit struct {
 	client     *http.Client
 	subreddits []string
 	label      string
 	baseURL    string
+	pacer      *pacer
 }
 
 func NewReddit(client *http.Client, subreddits []string, label string) *Reddit {
@@ -56,6 +97,7 @@ func NewReddit(client *http.Client, subreddits []string, label string) *Reddit {
 		subreddits: subreddits,
 		label:      label,
 		baseURL:    "https://www.reddit.com",
+		pacer:      redditPacer,
 	}
 }
 
@@ -64,36 +106,17 @@ func (r *Reddit) Label() string { return r.label }
 func (r *Reddit) Name() string { return "Reddit" }
 
 func (r *Reddit) Fetch(ctx context.Context) (any, error) {
-	type subredditResult struct {
-		subreddit string
-		posts     []RedditPost
-		err       error
-	}
-
-	var wg sync.WaitGroup
-	results := make([]subredditResult, len(r.subreddits))
-
-	for i, sub := range r.subreddits {
-		wg.Add(1)
-		go func(idx int, subreddit string) {
-			defer wg.Done()
-			posts, err := r.fetchSubreddit(ctx, subreddit)
-			results[idx] = subredditResult{subreddit: subreddit, posts: posts, err: err}
-		}(i, sub)
-	}
-
-	wg.Wait()
-
 	bySubreddit := make(map[string][]RedditPost)
 	var firstErr error
-	for _, res := range results {
-		if res.err != nil {
+	for _, sub := range r.subreddits {
+		posts, err := r.fetchSubreddit(ctx, sub)
+		if err != nil {
 			if firstErr == nil {
-				firstErr = res.err
+				firstErr = err
 			}
 			continue
 		}
-		bySubreddit[res.subreddit] = res.posts
+		bySubreddit[sub] = posts
 	}
 
 	if len(bySubreddit) == 0 {
@@ -107,27 +130,28 @@ func (r *Reddit) Fetch(ctx context.Context) (any, error) {
 }
 
 func (r *Reddit) fetchSubreddit(ctx context.Context, subreddit string) ([]RedditPost, error) {
-	apiURL := fmt.Sprintf("%s/r/%s/top.rss?t=day&limit=5", r.baseURL, subreddit)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating request for r/%s: %w", subreddit, err)
-	}
-	req.Header.Set("User-Agent", "burrow/1.0 (by /u/kaktus_jack; info@burrow.janiskrasemann.com)")
-
-	resp, err := r.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("fetching reddit posts for r/%s: %w", subreddit, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Reddit RSS returned status %d for r/%s", resp.StatusCode, subreddit)
-	}
-
+	const maxAttempts = 3
 	var feed atomFeed
-	if err := xml.NewDecoder(resp.Body).Decode(&feed); err != nil {
-		return nil, fmt.Errorf("decoding Reddit RSS for r/%s: %w", subreddit, err)
+
+	for attempt := 1; ; attempt++ {
+		if err := r.pacer.wait(ctx); err != nil {
+			return nil, fmt.Errorf("waiting for reddit rate limit slot for r/%s: %w", subreddit, err)
+		}
+
+		retryAfter, err := r.requestFeed(ctx, subreddit, &feed)
+		if err == nil {
+			break
+		}
+		if retryAfter < 0 || attempt == maxAttempts {
+			return nil, err
+		}
+		timer := time.NewTimer(retryAfter)
+		select {
+		case <-timer.C:
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		}
 	}
 
 	posts := make([]RedditPost, 0, len(feed.Entries))
@@ -143,6 +167,46 @@ func (r *Reddit) fetchSubreddit(ctx context.Context, subreddit string) ([]Reddit
 	}
 
 	return posts, nil
+}
+
+// requestFeed performs a single feed request. On a retryable failure (429 or
+// 5xx) it returns the delay to wait before the next attempt; on a permanent
+// failure the returned delay is negative.
+func (r *Reddit) requestFeed(ctx context.Context, subreddit string, feed *atomFeed) (time.Duration, error) {
+	apiURL := fmt.Sprintf("%s/r/%s/top.rss?t=day&limit=5", r.baseURL, subreddit)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return -1, fmt.Errorf("creating request for r/%s: %w", subreddit, err)
+	}
+	req.Header.Set("User-Agent", "burrow/1.0 (by /u/kaktus_jack; info@burrow.janiskrasemann.com)")
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return 5 * time.Second, fmt.Errorf("fetching reddit posts for r/%s: %w", subreddit, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+		retryAfter := 10 * time.Second
+		if secs, err := strconv.Atoi(resp.Header.Get("Retry-After")); err == nil && secs > 0 && secs <= 60 {
+			retryAfter = time.Duration(secs) * time.Second
+		}
+		return retryAfter, fmt.Errorf("Reddit RSS returned status %d for r/%s", resp.StatusCode, subreddit)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return -1, fmt.Errorf("Reddit RSS returned status %d for r/%s", resp.StatusCode, subreddit)
+	}
+
+	*feed = atomFeed{}
+	if err := xml.NewDecoder(resp.Body).Decode(feed); err != nil {
+		return -1, fmt.Errorf("decoding Reddit RSS for r/%s: %w", subreddit, err)
+	}
+	// Reddit soft-throttles by serving 200 with an empty feed instead of 429.
+	if len(feed.Entries) == 0 {
+		return 10 * time.Second, fmt.Errorf("Reddit RSS returned empty feed for r/%s (soft rate limit)", subreddit)
+	}
+	return 0, nil
 }
 
 // mergePosts combines posts from multiple subreddits, guaranteeing at least one
