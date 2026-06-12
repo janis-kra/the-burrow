@@ -1,11 +1,24 @@
 schedule: "30 6 * * *"  # 6:30 AM daily
-edition: 61
+edition: 62
 
 email:
   from: "The Burrow<mail@burrow.janiskrasemann.com>"
   to: "janis.krasemann@proton.me"
   test_to: "burrow-test@fleneifvio.resend.app"
   resend_api_key: "${RESEND_API_KEY}"
+
+immo:
+  schedule: "0 8 * * *"  # 8:00 AM daily
+  state_path: "/var/lib/burrow/immo-state.json"
+  criteria:
+    min_price: 250000
+    max_price: 450000
+    locations: ["Hameln", "Emmerthal", "Aerzen"]
+  sites:
+    - type: weserland
+      url: "https://weserland-immobilien.de/immobilien/"
+    - type: hapke
+      url: "https://www.hapke-immobilien.de/immobilien-hameln-kaufen"
 
 sources:
   - type: weather

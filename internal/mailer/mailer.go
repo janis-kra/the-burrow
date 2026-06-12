@@ -53,3 +53,23 @@ func (m *Mailer) Send(email *renderer.RenderedEmail) error {
 	fmt.Printf("email sent: %s\n", sent.Id)
 	return nil
 }
+
+// SendEmail sends a standalone email (no digest subject, no header image),
+// e.g. the immo digest.
+func (m *Mailer) SendEmail(to, subject, html, text string) error {
+	params := &resend.SendEmailRequest{
+		From:    m.from,
+		To:      []string{to},
+		Subject: subject,
+		Html:    html,
+		Text:    text,
+	}
+
+	sent, err := m.client.Emails.Send(params)
+	if err != nil {
+		return fmt.Errorf("sending email via resend: %w", err)
+	}
+
+	fmt.Printf("email sent: %s\n", sent.Id)
+	return nil
+}

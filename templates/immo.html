@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Burrow Immobilien</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f1ea; font-family:Georgia, 'Times New Roman', serif; color:#2b2b2b;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f1ea;">
+<tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#fffdf8; border:1px solid #e0d9c8;">
+
+<tr><td style="padding:28px 32px 18px 32px; border-bottom:2px solid #2b2b2b;">
+  <div style="font-size:22px; font-weight:bold; letter-spacing:1px;">Burrow Immobilien</div>
+  <div style="font-size:13px; color:#8a8170; margin-top:4px;">{{.Date}}</div>
+</td></tr>
+
+{{if .PriceDrops}}
+<tr><td style="padding:24px 32px 4px 32px;">
+  <div style="font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase; color:#a3552b;">Preissenkungen</div>
+</td></tr>
+{{range .PriceDrops}}
+<tr><td style="padding:14px 32px;">
+  <div style="border-left:3px solid #a3552b; padding-left:14px;">
+    <a href="{{.URL}}" style="font-size:17px; font-weight:bold; color:#2b2b2b; text-decoration:none;">{{.Title}}</a>
+    <div style="margin-top:6px; font-size:16px;">
+      <span style="color:#8a8170; text-decoration:line-through;">{{.OldPriceRaw}}</span>
+      &nbsp;<strong style="color:#a3552b;">{{.PriceRaw}}</strong>
+    </div>
+    {{with detailLine .Listing}}<div style="margin-top:4px; font-size:13px; color:#8a8170;">{{.}}</div>{{end}}
+    <div style="margin-top:6px; font-size:11px;"><span style="color:#b0a890;">via {{.Source}}</span></div>
+  </div>
+</td></tr>
+{{end}}
+{{end}}
+
+{{if .New}}
+<tr><td style="padding:24px 32px 4px 32px;">
+  <div style="font-size:12px; font-weight:bold; letter-spacing:2px; text-transform:uppercase; color:#4a6741;">Neue Listings</div>
+</td></tr>
+{{range .New}}
+<tr><td style="padding:14px 32px;">
+  <div style="border-left:3px solid #4a6741; padding-left:14px;">
+    <a href="{{.URL}}" style="font-size:17px; font-weight:bold; color:#2b2b2b; text-decoration:none;">{{.Title}}</a>
+    <div style="margin-top:6px; font-size:16px;"><strong>{{if .PriceRaw}}{{.PriceRaw}}{{else}}Preis auf Anfrage{{end}}</strong></div>
+    {{with detailLine .}}<div style="margin-top:4px; font-size:13px; color:#8a8170;">{{.}}</div>{{end}}
+    <div style="margin-top:6px; font-size:11px;"><span style="color:#b0a890;">via {{.Source}}</span></div>
+  </div>
+</td></tr>
+{{end}}
+{{end}}
+
+<tr><td style="padding:24px 32px 28px 32px; border-top:1px solid #e0d9c8;">
+  <div style="font-size:12px; color:#b0a890;">The Burrow · Immobilien-Watch</div>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>

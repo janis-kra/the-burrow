@@ -14,6 +14,26 @@ type Config struct {
 	Edition  int            `yaml:"edition"`
 	Email    EmailConfig    `yaml:"email"`
 	Sources  []SourceConfig `yaml:"sources"`
+	Immo     *ImmoConfig    `yaml:"immo,omitempty"` // nil => feature disabled
+}
+
+type ImmoConfig struct {
+	Schedule  string           `yaml:"schedule"`
+	StatePath string           `yaml:"state_path"`
+	To        string           `yaml:"to,omitempty"` // default: Email.To
+	Criteria  ImmoCriteria     `yaml:"criteria"`
+	Sites     []ImmoSiteConfig `yaml:"sites"`
+}
+
+type ImmoCriteria struct {
+	MinPrice  int      `yaml:"min_price"` // Euro, 0 = no bound
+	MaxPrice  int      `yaml:"max_price"` // Euro, 0 = no bound
+	Locations []string `yaml:"locations"`
+}
+
+type ImmoSiteConfig struct {
+	Type string `yaml:"type"` // "weserland" | "hapke"
+	URL  string `yaml:"url"`
 }
 
 type EmailConfig struct {

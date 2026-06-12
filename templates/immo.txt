@@ -1,0 +1,21 @@
+BURROW IMMOBILIEN — {{.Date}}
+================================
+{{if .PriceDrops}}
+PREISSENKUNGEN
+--------------
+{{range .PriceDrops}}
+* {{.Title}}
+  {{.OldPriceRaw}} -> {{.PriceRaw}}
+  {{with detailLine .Listing}}{{.}}
+  {{end}}via {{.Source}}
+  {{.URL}}
+{{end}}{{end}}{{if .New}}
+NEUE LISTINGS
+-------------
+{{range .New}}
+* {{.Title}}
+  {{if .PriceRaw}}{{.PriceRaw}}{{else}}Preis auf Anfrage{{end}}
+  {{with detailLine .}}{{.}}
+  {{end}}via {{.Source}}
+  {{.URL}}
+{{end}}{{end}}

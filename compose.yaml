@@ -5,6 +5,7 @@ services:
       dockerfile: Containerfile
     volumes:
       - ./config.yaml:/etc/burrow/config.yaml:ro
+      - ./state:/var/lib/burrow
     environment:
       - RESEND_API_KEY
       - READWISE_API_TOKEN
