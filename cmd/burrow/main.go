@@ -25,7 +25,13 @@ import (
 //go:embed assets/header.jpg
 var headerImage []byte
 
+// version is set at build time via -ldflags (see deploy.sh) so the running
+// binary's log output can be matched against a specific deploy.
+var version = "dev"
+
 func main() {
+	log.Printf("Burrow version: %s", version)
+
 	configPath := flag.String("config", "/etc/burrow/config.yaml", "path to config file")
 	once := flag.Bool("once", false, "run once immediately and exit")
 	test := flag.Bool("test", false, "render output and open HTML in browser instead of sending email")

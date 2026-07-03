@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -105,19 +106,36 @@ func (r *Reddit) Label() string { return r.label }
 
 func (r *Reddit) Name() string { return "Reddit" }
 
+// Fetch retrieves each subreddit independently and concurrently. A
+// rate-limited or otherwise failing subreddit only affects itself — it is
+// logged and skipped, never blocking or aborting its siblings. Fetches run
+// concurrently (rather than sequentially) so that one subreddit's retry
+// backoff can't burn through the fetch's context deadline before its
+// siblings get a turn.
 func (r *Reddit) Fetch(ctx context.Context) (any, error) {
 	bySubreddit := make(map[string][]RedditPost)
 	var firstErr error
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
 	for _, sub := range r.subreddits {
-		posts, err := r.fetchSubreddit(ctx, sub)
-		if err != nil {
-			if firstErr == nil {
-				firstErr = err
+		wg.Add(1)
+		go func(sub string) {
+			defer wg.Done()
+			posts, err := r.fetchSubreddit(ctx, sub)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				log.Printf("Reddit: skipping r/%s: %v", sub, err)
+				if firstErr == nil {
+					firstErr = err
+				}
+				return
 			}
-			continue
-		}
-		bySubreddit[sub] = posts
+			bySubreddit[sub] = posts
+		}(sub)
 	}
+	wg.Wait()
 
 	if len(bySubreddit) == 0 {
 		if firstErr != nil {
