@@ -76,12 +76,6 @@ func main() {
 			fetchers = append(fetchers, fetcher.NewReadwise(httpClient, src.APIToken))
 		case "hackernews":
 			fetchers = append(fetchers, fetcher.NewHackerNews(httpClient))
-		case "reddit":
-			subs := src.Subreddits
-			if len(subs) == 0 && src.Subreddit != "" {
-				subs = []string{src.Subreddit}
-			}
-			fetchers = append(fetchers, fetcher.NewReddit(httpClient, subs, src.Label))
 		case "nitter":
 			fetchers = append(fetchers, fetcher.NewNitter(httpClient, src.NitterInstance, src.Usernames, src.Limit))
 		default:

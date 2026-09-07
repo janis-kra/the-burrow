@@ -62,13 +62,6 @@ func TestFullPipelineRender(t *testing.T) {
 			},
 		},
 		{
-			Name: "Reddit",
-			Data: []fetcher.RedditPost{
-				{Title: "TIL about Go generics", Score: 1500, NumComments: 200, Permalink: "/r/golang/1", Author: "gopher", Selftext: "Today I learned that Go generics can be used for type-safe collections. This is a game changer for the ecosystem.", Subreddit: "golang"},
-				{Title: "Best IDE for Go", Score: 800, NumComments: 100, Permalink: "/r/golang/2", Author: "dev42", Subreddit: "golang"},
-			},
-		},
-		{
 			Name: "Opinion",
 			Data: []fetcher.NitterPost{
 				{Username: "techguru", Text: "Interesting take on AI progress", Link: "https://nitter.net/techguru/1", PubDate: time.Now().Add(-2 * time.Hour), AvatarURL: "https://unavatar.io/twitter/techguru"},
@@ -94,8 +87,6 @@ func TestFullPipelineRender(t *testing.T) {
 		{"readwise author", "Walter Isaacson"},
 		{"hn title", "Go 1.25 Released"},
 		{"hn points", "500"},
-		{"reddit title", "TIL about Go generics"},
-		{"reddit subreddit", "r/golang"},
 		{"nitter username", "@techguru"},
 		{"nitter text", "Interesting take on AI progress"},
 		{"footer", "Burrow"},
@@ -108,7 +99,7 @@ func TestFullPipelineRender(t *testing.T) {
 	}
 
 	// Verify text version contains key content
-	textChecks := []string{"Hacker News", "Go 1.25 Released", "Reddit", "TIL about Go generics", "Weather", "Readwise", "Opinion", "@techguru"}
+	textChecks := []string{"Hacker News", "Go 1.25 Released", "Weather", "Readwise", "Opinion", "@techguru"}
 	for _, want := range textChecks {
 		if !strings.Contains(email.Text, want) {
 			t.Errorf("text missing: expected to contain %q", want)
@@ -140,12 +131,6 @@ func TestFullPipelineWithErrors(t *testing.T) {
 			Name:  "Hacker News",
 			Error: &testError{"HN API timeout"},
 		},
-		{
-			Name: "Reddit",
-			Data: []fetcher.RedditPost{
-				{Title: "Working post", Score: 100, NumComments: 10, Permalink: "/r/test/1", Author: "user1", Subreddit: "test"},
-			},
-		},
 	}
 
 	email, err := r.Render(results, 1)
@@ -158,8 +143,8 @@ func TestFullPipelineWithErrors(t *testing.T) {
 		t.Error("expected error module in HTML")
 	}
 	// Working sources should still render
-	if !strings.Contains(email.HTML, "Working post") {
-		t.Error("expected working Reddit post in HTML")
+	if !strings.Contains(email.HTML, "Berlin") {
+		t.Error("expected working weather module in HTML")
 	}
 }
 

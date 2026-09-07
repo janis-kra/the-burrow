@@ -13,10 +13,6 @@ BURROW DIGEST — {{.Date}}
 {{end}}{{end}}{{if eq .Name "Readwise"}}{{range highlights .Data}}
   "{{.Text}}"
   — {{.BookTitle}}{{if .BookAuthor}}, {{.BookAuthor}}{{end}}
-{{end}}{{end}}{{if eq .Name "Reddit"}}{{range redditPosts .Data}}
-  * [r/{{.Subreddit}}] {{.Title}}
-    {{.Score}} pts | {{.NumComments}} comments
-    {{.FullPermalink}}
 {{end}}{{end}}{{if eq .Name "Opinion"}}{{range nitterPosts .Data}}
   @{{.Username}} ({{nitterTimeAgo .PubDate}}):
   {{.Text}}

@@ -87,64 +87,6 @@ func TestExcerpt(t *testing.T) {
 	}
 }
 
-func TestRedditLead(t *testing.T) {
-	t.Run("prefers post with selftext", func(t *testing.T) {
-		posts := []fetcher.RedditPost{
-			{Title: "No selftext", Score: 100},
-			{Title: "Has selftext", Score: 50, Selftext: "Some discussion here."},
-			{Title: "Also has selftext", Score: 30, Selftext: "Another discussion."},
-		}
-		lead := redditLead(posts)
-		if lead == nil {
-			t.Fatal("expected a lead post")
-		}
-		if lead.Title != "Has selftext" {
-			t.Errorf("expected 'Has selftext', got %q", lead.Title)
-		}
-	})
-
-	t.Run("falls back to first if no selftext", func(t *testing.T) {
-		posts := []fetcher.RedditPost{
-			{Title: "First", Score: 100},
-			{Title: "Second", Score: 50},
-		}
-		lead := redditLead(posts)
-		if lead == nil {
-			t.Fatal("expected a lead post")
-		}
-		if lead.Title != "First" {
-			t.Errorf("expected 'First', got %q", lead.Title)
-		}
-	})
-
-	t.Run("empty posts", func(t *testing.T) {
-		lead := redditLead([]fetcher.RedditPost{})
-		if lead != nil {
-			t.Error("expected nil for empty posts")
-		}
-	})
-}
-
-func TestRedditSidebar(t *testing.T) {
-	posts := []fetcher.RedditPost{
-		{Title: "First", Score: 100},
-		{Title: "Lead with text", Score: 80, Selftext: "Discussion here."},
-		{Title: "Third", Score: 60},
-	}
-
-	sidebar := redditSidebar(posts)
-
-	// Lead is "Lead with text" (first with selftext in top 5), so sidebar should exclude it
-	for _, p := range sidebar {
-		if p.Title == "Lead with text" {
-			t.Error("sidebar should not contain the lead post")
-		}
-	}
-	if len(sidebar) != 2 {
-		t.Errorf("expected 2 sidebar posts, got %d", len(sidebar))
-	}
-}
-
 func TestNitterTimeAgo(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -31,13 +31,6 @@ sources:
 
   - type: hackernews
 
-  - type: reddit
-    label: "Dev & Tech"
-    subreddits:
-      - ClaudeCode
-      - ExperiencedDevs
-      - webdev
-
   - type: nitter
     nitter_instance: "https://nitter.net"
     usernames:
@@ -46,11 +39,3 @@ sources:
       - WesBos
       - addyosmani
     limit: 6
-
-  - type: reddit
-    label: "General"
-    subreddits:
-      - de
-      - EU5
-      - Finanzen
-      - DnD

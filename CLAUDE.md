@@ -1,6 +1,6 @@
 # Burrow
 
-Go-based personal morning digest email service. Aggregates content from Readwise, Hacker News, Reddit, and weather, then sends a styled HTML email on a cron schedule via Resend API.
+Go-based personal morning digest email service. Aggregates content from Readwise, Hacker News, Nitter, and weather, then sends a styled HTML email on a cron schedule via Resend API.
 
 ## Testing Email Output
 

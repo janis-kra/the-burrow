@@ -43,37 +43,31 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 	isEven := func(n int) bool { return n%2 == 0 }
 
 	funcMap := htmltpl.FuncMap{
-		"weatherIcon": weatherIcon,
-		"hasPrefix":   strings.HasPrefix,
-		"hnPosts":     asHNPosts,
-		"weatherData": asWeatherData,
-		"highlights":  asHighlights,
-		"redditPosts":   asRedditPosts,
-		"redditLead":    redditLead,
-		"redditSidebar": redditSidebar,
-		"markdown":      renderMarkdown,
-		"excerpt":     excerpt,
-		"slice":       sliceFrom,
-		"nextSection":   nextSection,
-		"isEven":        isEven,
+		"weatherIcon":    weatherIcon,
+		"hasPrefix":      strings.HasPrefix,
+		"hnPosts":        asHNPosts,
+		"weatherData":    asWeatherData,
+		"highlights":     asHighlights,
+		"markdown":       renderMarkdown,
+		"excerpt":        excerpt,
+		"slice":          sliceFrom,
+		"nextSection":    nextSection,
+		"isEven":         isEven,
 		"nitterPosts":    asNitterPosts,
 		"nitterLeftCol":  nitterLeftCol,
 		"nitterRightCol": nitterRightCol,
 		"nitterTimeAgo":  nitterTimeAgo,
 	}
 	textFuncMap := texttpl.FuncMap{
-		"weatherIcon": weatherIcon,
-		"hasPrefix":   strings.HasPrefix,
-		"hnPosts":     asHNPosts,
-		"weatherData": asWeatherData,
-		"highlights":  asHighlights,
-		"redditPosts":   asRedditPosts,
-		"redditLead":    redditLead,
-		"redditSidebar": redditSidebar,
-		"excerpt":       excerpt,
-		"slice":       sliceFrom,
-		"nextSection":   func() int { return 0 },
-		"isEven":        isEven,
+		"weatherIcon":    weatherIcon,
+		"hasPrefix":      strings.HasPrefix,
+		"hnPosts":        asHNPosts,
+		"weatherData":    asWeatherData,
+		"highlights":     asHighlights,
+		"excerpt":        excerpt,
+		"slice":          sliceFrom,
+		"nextSection":    func() int { return 0 },
+		"isEven":         isEven,
 		"nitterPosts":    asNitterPosts,
 		"nitterLeftCol":  nitterLeftCol,
 		"nitterRightCol": nitterRightCol,
@@ -143,48 +137,6 @@ func asHighlights(data any) []fetcher.Highlight {
 	return nil
 }
 
-func asRedditPosts(data any) []fetcher.RedditPost {
-	if posts, ok := data.([]fetcher.RedditPost); ok {
-		return posts
-	}
-	return nil
-}
-
-// redditLead returns the first post with selftext from the top 5 posts.
-// Falls back to the first post if none have selftext.
-func redditLead(data any) *fetcher.RedditPost {
-	posts := asRedditPosts(data)
-	if len(posts) == 0 {
-		return nil
-	}
-	limit := 5
-	if limit > len(posts) {
-		limit = len(posts)
-	}
-	for i := 0; i < limit; i++ {
-		if strings.TrimSpace(posts[i].Selftext) != "" {
-			return &posts[i]
-		}
-	}
-	return &posts[0]
-}
-
-// redditSidebar returns all posts except the lead post.
-func redditSidebar(data any) []fetcher.RedditPost {
-	posts := asRedditPosts(data)
-	lead := redditLead(data)
-	if lead == nil {
-		return posts
-	}
-	var rest []fetcher.RedditPost
-	for i := range posts {
-		if &posts[i] != lead {
-			rest = append(rest, posts[i])
-		}
-	}
-	return rest
-}
-
 var md = goldmark.New(
 	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
@@ -235,11 +187,6 @@ func sliceFrom(start int, items any) any {
 	case []fetcher.HNPost:
 		if start >= len(v) {
 			return []fetcher.HNPost{}
-		}
-		return v[start:]
-	case []fetcher.RedditPost:
-		if start >= len(v) {
-			return []fetcher.RedditPost{}
 		}
 		return v[start:]
 	default:

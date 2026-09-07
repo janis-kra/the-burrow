@@ -1,11 +1,11 @@
 # Burrow
 
-Personal morning digest delivered to your inbox. Aggregates Hacker News, weather, Readwise highlights, and Reddit into a single email.
+Personal morning digest delivered to your inbox. Aggregates Hacker News, weather, Readwise highlights, and Nitter timelines into a single email.
 
 ## Setup
 
 ```bash
-cp config.yaml config.yaml  # edit with your coordinates, subreddit, etc.
+cp config.yaml config.yaml  # edit with your coordinates, sources, etc.
 export RESEND_API_KEY=re_xxxxxxxxx
 export READWISE_API_TOKEN=your_token
 ```
@@ -114,4 +114,4 @@ All configuration lives in `config.yaml`. Secrets support env var substitution w
 | `email.resend_api_key` | Resend API key (`${RESEND_API_KEY}`) |
 | `weather.latitude/longitude` | Location for weather forecast |
 | `readwise.api_token` | Readwise access token |
-| `reddit.subreddit` | Subreddit to pull top posts from |
+

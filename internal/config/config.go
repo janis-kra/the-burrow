@@ -44,17 +44,13 @@ type EmailConfig struct {
 }
 
 type SourceConfig struct {
-	Type      string  `yaml:"type"`
+	Type string `yaml:"type"`
 	// Weather fields
 	Latitude  float64 `yaml:"latitude,omitempty"`
 	Longitude float64 `yaml:"longitude,omitempty"`
 	Name      string  `yaml:"name,omitempty"`
 	// Readwise fields
-	APIToken  string  `yaml:"api_token,omitempty"`
-	// Reddit fields
-	Subreddit  string   `yaml:"subreddit,omitempty"`
-	Subreddits []string `yaml:"subreddits,omitempty"`
-	Label      string   `yaml:"label,omitempty"`
+	APIToken string `yaml:"api_token,omitempty"`
 	// Nitter fields
 	NitterInstance string   `yaml:"nitter_instance,omitempty"`
 	Usernames      []string `yaml:"usernames,omitempty"`
