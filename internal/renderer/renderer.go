@@ -20,6 +20,10 @@ type DigestData struct {
 	DateSeed  string
 	Edition   int
 	Results   []fetcher.Result
+
+	// Immo section (optional "page 2")
+	ImmoHTML htmltpl.HTML
+	ImmoText string
 }
 
 type RenderedEmail struct {
@@ -87,7 +91,7 @@ func New(htmlTemplate, textTemplate string) (*Renderer, error) {
 	return &Renderer{htmlTpl: ht, textTpl: tt, sectionCounter: counter}, nil
 }
 
-func (r *Renderer) Render(results []fetcher.Result, edition int) (*RenderedEmail, error) {
+func (r *Renderer) Render(results []fetcher.Result, edition int, immoHTML htmltpl.HTML, immoText string) (*RenderedEmail, error) {
 	*r.sectionCounter = 0
 
 	now := time.Now()
@@ -98,6 +102,8 @@ func (r *Renderer) Render(results []fetcher.Result, edition int) (*RenderedEmail
 		DateSeed:  now.Format("2006-01-02"),
 		Edition:   edition,
 		Results:   results,
+		ImmoHTML:  immoHTML,
+		ImmoText:  immoText,
 	}
 
 	var htmlBuf bytes.Buffer

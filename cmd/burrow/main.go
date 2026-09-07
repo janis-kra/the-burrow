@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"flag"
+	htmltpl "html/template"
 	"log"
 	"net/http"
 	"os"
@@ -138,7 +139,36 @@ func main() {
 
 		results := agg.FetchAll(ctx)
 
-		email, err := rend.Render(results, edition)
+		// Immo integration ("page 2" of the digest)
+		var immoHTML, immoText string
+		var immoState *immo.State
+		if cfg.Immo != nil && len(immoScrapers) > 0 {
+			listings := immo.ScrapeAll(ctx, immoScrapers)
+			filtered := immo.Filter(listings, immoCriteria)
+			log.Printf("Immo: %d listings scraped, %d match criteria", len(listings), len(filtered))
+
+			state, err := immo.LoadState(cfg.Immo.StatePath)
+			if err != nil {
+				log.Printf("Failed to load immo state: %v", err)
+			} else {
+				immoState = state
+				diff := state.Diff(filtered, time.Now())
+				if !diff.Empty() {
+					var err error
+					immoHTML, immoText, err = immo.RenderForDigest(immoHTMLTpl, immoTextTpl, immo.EmailData{
+						Date:       time.Now().Format("January 2, 2006"),
+						PriceDrops: diff.PriceDrops,
+						New:        diff.New,
+					})
+					if err != nil {
+						log.Printf("Failed to render immo content: %v", err)
+						immoHTML, immoText = "", ""
+					}
+				}
+			}
+		}
+
+		email, err := rend.Render(results, edition, htmltpl.HTML(immoHTML), immoText)
 		if err != nil {
 			log.Printf("Failed to render digest: %v", err)
 			return
@@ -147,6 +177,13 @@ func main() {
 		if err := mail.Send(email); err != nil {
 			log.Printf("Failed to send digest: %v", err)
 			return
+		}
+
+		// Save immo state only after successful send
+		if immoState != nil {
+			if err := immoState.Save(cfg.Immo.StatePath); err != nil {
+				log.Printf("Failed to save immo state: %v", err)
+			}
 		}
 
 		if err := config.IncrementEdition(*configPath); err != nil {
@@ -237,7 +274,7 @@ func main() {
 		log.Println("Test mode: rendering digest and opening in browser...")
 		results := agg.FetchAll(ctx)
 
-		email, err := rend.Render(results, cfg.Edition+1)
+		email, err := rend.Render(results, cfg.Edition+1, "", "")
 		if err != nil {
 			log.Fatalf("Failed to render digest: %v", err)
 		}
@@ -259,18 +296,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to add cron schedule %q: %v", cfg.Schedule, err)
 	}
-	if cfg.Immo != nil {
-		_, err = c.AddFunc(cfg.Immo.Schedule, runImmo)
-		if err != nil {
-			log.Fatalf("Failed to add immo cron schedule %q: %v", cfg.Immo.Schedule, err)
-		}
-	}
 	c.Start()
 
 	log.Printf("Burrow started. Schedule: %s", cfg.Schedule)
-	if cfg.Immo != nil {
-		log.Printf("Immo watch enabled. Schedule: %s", cfg.Immo.Schedule)
-	}
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)

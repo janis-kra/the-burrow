@@ -27,7 +27,7 @@ func TestRenderHTML(t *testing.T) {
 		},
 	}
 
-	email, err := r.Render(results, 1)
+	email, err := r.Render(results, 1, "", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestRenderErrorModule(t *testing.T) {
 		{Name: "Weather", Error: fmt.Errorf("network error")},
 	}
 
-	email, err := r.Render(results, 1)
+	email, err := r.Render(results, 1, "", "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

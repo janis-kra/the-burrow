@@ -72,6 +72,10 @@ func (s *State) Save(path string) error {
 		return fmt.Errorf("marshaling state: %w", err)
 	}
 
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("creating state directory: %w", err)
+	}
+
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".immo-state-*.json")
 	if err != nil {
 		return fmt.Errorf("creating temp state file: %w", err)

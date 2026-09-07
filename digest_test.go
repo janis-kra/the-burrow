@@ -70,7 +70,7 @@ func TestFullPipelineRender(t *testing.T) {
 		},
 	}
 
-	email, err := r.Render(results, 42)
+	email, err := r.Render(results, 42, "", "")
 	if err != nil {
 		t.Fatalf("render failed: %v", err)
 	}
@@ -133,7 +133,7 @@ func TestFullPipelineWithErrors(t *testing.T) {
 		},
 	}
 
-	email, err := r.Render(results, 1)
+	email, err := r.Render(results, 1, "", "")
 	if err != nil {
 		t.Fatalf("render failed: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestFullPipelineEmptyResults(t *testing.T) {
 		t.Fatalf("failed to create renderer: %v", err)
 	}
 
-	email, err := r.Render([]fetcher.Result{}, 1)
+	email, err := r.Render([]fetcher.Result{}, 1, "", "")
 	if err != nil {
 		t.Fatalf("render failed: %v", err)
 	}

@@ -58,6 +58,32 @@ func RenderEmail(htmlTemplate, textTemplate string, data EmailData) (html, text 
 	return htmlBuf.String(), textBuf.String(), nil
 }
 
+// RenderForDigest renders the immo content as an embeddable fragment (no
+// outer <!DOCTYPE> or <html>/<body> wrapper) so it can be included as
+// "page 2" inside the main digest email. The listing visuals are
+// identical to the standalone immo email.
+func RenderForDigest(htmlTemplate, textTemplate string, data EmailData) (html, text string, err error) {
+	fullHTML, fullText, err := RenderEmail(htmlTemplate, textTemplate, data)
+	if err != nil {
+		return "", "", err
+	}
+	// Extract inner body content for embedding.
+	if bodyStart := strings.Index(fullHTML, "<body"); bodyStart != -1 {
+		if tagEnd := strings.Index(fullHTML[bodyStart:], ">"); tagEnd != -1 {
+			bodyStart += tagEnd + 1
+			if bodyEnd := strings.LastIndex(fullHTML, "</body>"); bodyEnd != -1 {
+				html = strings.TrimSpace(fullHTML[bodyStart:bodyEnd])
+			}
+		}
+	}
+	if html == "" {
+		html = fullHTML // fallback
+	}
+	// For text we can just return the full text (caller will prefix separator)
+	text = fullText
+	return html, text, nil
+}
+
 // Subject builds the email subject, e.g.
 // "Burrow Immobilien — 3 neue Treffer, 1 Preissenkung".
 func Subject(d DiffResult) string {
