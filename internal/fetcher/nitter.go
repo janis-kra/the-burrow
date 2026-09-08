@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -26,26 +27,61 @@ type NitterPost struct {
 
 type Nitter struct {
 	client    *http.Client
-	instance  string
+	instances []string
 	usernames []string
 	limit     int
 }
 
-func NewNitter(client *http.Client, instance string, usernames []string, limit int) *Nitter {
+// Default public Nitter mirrors, tried in order when none are configured.
+var defaultNitterInstances = []string{
+	"https://nitter.net",
+	"https://nitter.jaydenha.uk",
+	"https://nitter.cz",
+	"https://nitter.privacyredirect.com",
+}
+
+func NewNitter(client *http.Client, instances []string, usernames []string, limit int) *Nitter {
 	if limit <= 0 {
 		limit = 5
 	}
-	return &Nitter{client: client, instance: strings.TrimRight(instance, "/"), usernames: usernames, limit: limit}
+	cleaned := cleanInstances(instances)
+	if len(cleaned) == 0 {
+		cleaned = append([]string(nil), defaultNitterInstances...)
+	}
+	return &Nitter{client: client, instances: cleaned, usernames: usernames, limit: limit}
+}
+
+func cleanInstances(instances []string) []string {
+	seen := make(map[string]bool, len(instances))
+	var out []string
+	for _, raw := range instances {
+		inst := strings.TrimRight(strings.TrimSpace(raw), "/")
+		if inst == "" || seen[inst] {
+			continue
+		}
+		seen[inst] = true
+		out = append(out, inst)
+	}
+	return out
 }
 
 func (n *Nitter) Name() string { return "Opinion" }
 
+// lookbackGuarantee is how far back we go to ensure each followed user can
+// still contribute one post even if they were quiet in the last day.
+const lookbackGuarantee = 7 * 24 * time.Hour
+
+// lookbackFill is the window used for extra (non-guaranteed) slots.
+const lookbackFill = 24 * time.Hour
+
 func (n *Nitter) Fetch(ctx context.Context) (any, error) {
-	cutoff := time.Now().Add(-24 * time.Hour)
+	now := time.Now()
+	guaranteeCutoff := now.Add(-lookbackGuarantee)
+	fillCutoff := now.Add(-lookbackFill)
 	var allPosts []NitterPost
 
 	for _, username := range n.usernames {
-		posts, err := n.fetchUser(ctx, username, cutoff)
+		posts, err := n.fetchUser(ctx, username, guaranteeCutoff)
 		if err != nil {
 			log.Printf("nitter: failed to fetch @%s: %v", username, err)
 			continue
@@ -53,55 +89,76 @@ func (n *Nitter) Fetch(ctx context.Context) (any, error) {
 		allPosts = append(allPosts, posts...)
 	}
 
-	sort.Slice(allPosts, func(i, j int) bool {
+	return selectNitterPosts(allPosts, n.limit, fillCutoff), nil
+}
+
+// selectNitterPosts picks up to limit posts with two rules:
+//  1. Every user who has a post is represented at least once (may exceed limit
+//     when there are more active users than slots).
+//  2. Remaining slots are filled by recency, but only from the fill window
+//     (typically last 24h), so one prolific poster cannot crowd others out.
+func selectNitterPosts(allPosts []NitterPost, limit int, fillCutoff time.Time) []NitterPost {
+	if len(allPosts) == 0 {
+		return nil
+	}
+	if limit <= 0 {
+		limit = 5
+	}
+
+	sort.SliceStable(allPosts, func(i, j int) bool {
 		return allPosts[i].PubDate.After(allPosts[j].PubDate)
 	})
 
-	// Guarantee at least one tweet per user, then fill remaining slots by recency
-	seen := make(map[string]bool)
-	var guaranteed []NitterPost
+	// Newest post per user (allPosts already newest-first).
+	bestByUser := make(map[string]NitterPost, len(allPosts))
+	var userOrder []string
 	for _, p := range allPosts {
-		if !seen[p.Username] {
-			seen[p.Username] = true
-			guaranteed = append(guaranteed, p)
+		if _, ok := bestByUser[p.Username]; ok {
+			continue
 		}
+		bestByUser[p.Username] = p
+		userOrder = append(userOrder, p.Username)
 	}
 
-	if len(guaranteed) >= n.limit {
-		// More users than limit — just show the top tweet per user, sorted by time
-		sort.Slice(guaranteed, func(i, j int) bool {
-			return guaranteed[i].PubDate.After(guaranteed[j].PubDate)
-		})
-		return guaranteed, nil
+	guaranteed := make([]NitterPost, 0, len(userOrder))
+	for _, user := range userOrder {
+		guaranteed = append(guaranteed, bestByUser[user])
 	}
-
-	// Fill up to limit from all posts in recency order (guaranteed ones are already
-	// the top post per user, so they'll naturally appear first for each user)
-	result := make([]NitterPost, 0, n.limit)
-	for _, p := range allPosts {
-		if len(result) >= n.limit {
-			break
-		}
-		result = append(result, p)
-	}
-
-	// Ensure every user has at least one tweet even if it wasn't in the top N by time
-	included := make(map[string]bool)
-	for _, p := range result {
-		included[p.Username] = true
-	}
-	for _, p := range guaranteed {
-		if !included[p.Username] {
-			result = append(result, p)
-			included[p.Username] = true
-		}
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].PubDate.After(result[j].PubDate)
+	sort.SliceStable(guaranteed, func(i, j int) bool {
+		return guaranteed[i].PubDate.After(guaranteed[j].PubDate)
 	})
 
-	return result, nil
+	// More active users than slots: keep one each, sorted by recency.
+	if len(guaranteed) >= limit {
+		return guaranteed
+	}
+
+	included := make(map[string]bool, len(guaranteed))
+	result := make([]NitterPost, 0, limit)
+	for _, p := range guaranteed {
+		result = append(result, p)
+		included[p.Link] = true
+	}
+
+	// Fill remaining slots from the recent window only.
+	for _, p := range allPosts {
+		if len(result) >= limit {
+			break
+		}
+		if included[p.Link] {
+			continue
+		}
+		if p.PubDate.Before(fillCutoff) {
+			continue
+		}
+		result = append(result, p)
+		included[p.Link] = true
+	}
+
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].PubDate.After(result[j].PubDate)
+	})
+	return result
 }
 
 type rssDocument struct {
@@ -121,17 +178,38 @@ type rssItem struct {
 	Creator     string `xml:"http://purl.org/dc/elements/1.1/ creator"`
 }
 
-var imgSrcRe = regexp.MustCompile(`<img[^>]+src="([^"]+)"`)
+var (
+	imgSrcRe       = regexp.MustCompile(`(?i)<img[^>]+src="([^"]+)"`)
+	statusLinkRe   = regexp.MustCompile(`(?i)(?:https?://[^/]+)?/([^/]+)/status/(\d+)`)
+	nitterPicPath  = regexp.MustCompile(`(?i)/pic/(.+)$`)
+)
 
 func (n *Nitter) fetchUser(ctx context.Context, username string, cutoff time.Time) ([]NitterPost, error) {
-	url := fmt.Sprintf("%s/%s/rss", n.instance, username)
+	var errs []string
+	for _, instance := range n.instances {
+		posts, err := n.fetchUserFrom(ctx, instance, username, cutoff)
+		if err == nil {
+			if instance != n.instances[0] {
+				log.Printf("nitter: @%s fetched via fallback %s", username, instance)
+			}
+			return posts, nil
+		}
+		errs = append(errs, fmt.Sprintf("%s: %v", instance, err))
+	}
+	return nil, fmt.Errorf("all instances failed: %s", strings.Join(errs, "; "))
+}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+func (n *Nitter) fetchUserFrom(ctx context.Context, instance, username string, cutoff time.Time) ([]NitterPost, error) {
+	feedURL := fmt.Sprintf("%s/%s/rss", instance, username)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", feedURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Burrow/1.0)")
-	req.Header.Set("Accept", "application/rss+xml, application/xml, text/xml")
+	// Browser-like headers — some mirrors block bare bot UAs.
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "application/rss+xml, application/xml, text/xml, */*")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
 	resp, err := n.client.Do(req)
 	if err != nil {
@@ -139,18 +217,24 @@ func (n *Nitter) fetchUser(ctx context.Context, username string, cutoff time.Tim
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
-	}
-
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 	if err != nil {
 		return nil, err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	// Reject non-RSS bodies early (Cloudflare/Anubis challenge pages return 200).
+	trimmed := strings.TrimSpace(string(body))
+	if !strings.HasPrefix(trimmed, "<?xml") && !strings.HasPrefix(trimmed, "<rss") {
+		return nil, fmt.Errorf("non-RSS response from %s", feedURL)
+	}
+
 	var rss rssDocument
 	if err := xml.Unmarshal(body, &rss); err != nil {
-		return nil, fmt.Errorf("parsing RSS for @%s: %w", username, err)
+		return nil, fmt.Errorf("parsing RSS: %w", err)
 	}
 
 	var posts []NitterPost
@@ -175,12 +259,12 @@ func (n *Nitter) fetchUser(ctx context.Context, username string, cutoff time.Tim
 			}
 		}
 
-		images := extractImages(item.Description)
+		images := extractImages(item.Description, instance)
 
 		posts = append(posts, NitterPost{
 			Username:  username,
 			Text:      text,
-			Link:      item.Link,
+			Link:      toXStatusLink(item.Link),
 			PubDate:   pubDate,
 			Images:    images,
 			AvatarURL: fmt.Sprintf("https://unavatar.io/twitter/%s", username),
@@ -207,7 +291,7 @@ func parseRSSDate(s string) time.Time {
 	return time.Time{}
 }
 
-func extractImages(html string) []string {
+func extractImages(html, instance string) []string {
 	matches := imgSrcRe.FindAllStringSubmatch(html, -1)
 	var images []string
 	for _, m := range matches {
@@ -216,7 +300,78 @@ func extractImages(html string) []string {
 		if strings.Contains(src, "emoji") || strings.Contains(src, "twemoji") {
 			continue
 		}
-		images = append(images, src)
+		if rewritten := rewriteNitterMedia(src, instance); rewritten != "" {
+			images = append(images, rewritten)
+		}
 	}
 	return images
+}
+
+// toXStatusLink rewrites nitter status URLs to durable x.com links.
+func toXStatusLink(link string) string {
+	if m := statusLinkRe.FindStringSubmatch(link); m != nil {
+		return fmt.Sprintf("https://x.com/%s/status/%s", m[1], m[2])
+	}
+	return link
+}
+
+// rewriteNitterMedia turns nitter /pic/ proxy URLs into direct media hosts when
+// possible, so images still load after a mirror dies. Falls back to an absolute
+// nitter URL.
+func rewriteNitterMedia(src, instance string) string {
+	src = strings.TrimSpace(src)
+	if src == "" {
+		return ""
+	}
+
+	// Protocol-relative
+	if strings.HasPrefix(src, "//") {
+		src = "https:" + src
+	}
+
+	// Root-relative nitter path
+	if strings.HasPrefix(src, "/") {
+		src = strings.TrimRight(instance, "/") + src
+	}
+
+	m := nitterPicPath.FindStringSubmatch(src)
+	if m == nil {
+		// Non-nitter absolute URL (or unknown) — keep https if we can.
+		if strings.HasPrefix(src, "http://") {
+			return "https://" + strings.TrimPrefix(src, "http://")
+		}
+		return src
+	}
+
+	encoded := m[1]
+	// Strip fragment/query if present
+	if i := strings.IndexAny(encoded, "?#"); i >= 0 {
+		encoded = encoded[:i]
+	}
+	decoded, err := url.PathUnescape(encoded)
+	if err != nil {
+		decoded = encoded
+	}
+	decoded, err = url.QueryUnescape(decoded)
+	if err != nil {
+		// PathUnescape is usually enough; keep decoded as-is.
+	}
+
+	switch {
+	case strings.HasPrefix(decoded, "https://"), strings.HasPrefix(decoded, "http://"):
+		if strings.HasPrefix(decoded, "http://") {
+			return "https://" + strings.TrimPrefix(decoded, "http://")
+		}
+		return decoded
+	case strings.HasPrefix(decoded, "media/"), strings.HasPrefix(decoded, "tweet_video_thumb/"), strings.HasPrefix(decoded, "ext_tw_video_thumb/"):
+		return "https://pbs.twimg.com/" + decoded
+	case strings.HasPrefix(decoded, "profile_images/"):
+		return "https://pbs.twimg.com/" + decoded
+	default:
+		// Keep absolute nitter URL as last resort (prefer https).
+		if strings.HasPrefix(src, "http://") {
+			return "https://" + strings.TrimPrefix(src, "http://")
+		}
+		return src
+	}
 }

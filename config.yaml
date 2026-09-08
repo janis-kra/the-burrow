@@ -32,7 +32,12 @@ sources:
   - type: hackernews
 
   - type: nitter
-    nitter_instance: "https://nitter.net"
+    # Tried in order per user. nitter.net is primary (temporarily 410; expected back).
+    nitter_instances:
+      - "https://nitter.net"
+      - "https://nitter.jaydenha.uk"
+      - "https://nitter.cz"
+      - "https://nitter.privacyredirect.com"
     usernames:
       - bcherny
       - GeoffreyHuntley

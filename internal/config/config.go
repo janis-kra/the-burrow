@@ -52,9 +52,29 @@ type SourceConfig struct {
 	// Readwise fields
 	APIToken string `yaml:"api_token,omitempty"`
 	// Nitter fields
-	NitterInstance string   `yaml:"nitter_instance,omitempty"`
-	Usernames      []string `yaml:"usernames,omitempty"`
-	Limit          int      `yaml:"limit,omitempty"`
+	NitterInstance  string   `yaml:"nitter_instance,omitempty"`  // single mirror (legacy)
+	NitterInstances []string `yaml:"nitter_instances,omitempty"` // preferred; tried in order
+	Usernames       []string `yaml:"usernames,omitempty"`
+	Limit           int      `yaml:"limit,omitempty"`
+}
+
+// NitterMirrors returns configured Nitter base URLs in preference order.
+func (s SourceConfig) NitterMirrors() []string {
+	out := make([]string, 0, len(s.NitterInstances)+1)
+	seen := map[string]bool{}
+	add := func(raw string) {
+		v := strings.TrimRight(strings.TrimSpace(raw), "/")
+		if v == "" || seen[v] {
+			return
+		}
+		seen[v] = true
+		out = append(out, v)
+	}
+	for _, inst := range s.NitterInstances {
+		add(inst)
+	}
+	add(s.NitterInstance)
+	return out
 }
 
 var envVarPattern = regexp.MustCompile(`\$\{([^}]+)\}`)
