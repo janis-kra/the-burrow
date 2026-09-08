@@ -78,7 +78,7 @@ func main() {
 		case "hackernews":
 			fetchers = append(fetchers, fetcher.NewHackerNews(httpClient))
 		case "nitter":
-			fetchers = append(fetchers, fetcher.NewNitter(httpClient, src.NitterInstance, src.Usernames, src.Limit))
+			fetchers = append(fetchers, fetcher.NewNitter(httpClient, src.NitterMirrors(), src.Usernames, src.Limit))
 		default:
 			log.Fatalf("Unknown source type: %q", src.Type)
 		}
